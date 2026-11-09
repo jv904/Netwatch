@@ -1,0 +1,107 @@
+<div class="page-header">
+  <div>
+    <h1>Dispositivos da rede</h1>
+    <p>
+      @if (result(); as r) {
+        {{ r.totalElements.toLocaleString('pt-BR') }} {{ hasFilters() ? 'encontrados com os filtros atuais' : 'dispositivos identificados' }}
+      } @else {
+        Carregando inventário…
+      }
+    </p>
+  </div>
+  <a class="btn" routerLink="/discovery"><app-icon name="radar" [size]="16" /> Nova descoberta</a>
+</div>
+
+<div class="card card-flush">
+  <div class="filters" style="padding: 14px 14px 0">
+    <input
+      class="input"
+      type="search"
+      placeholder="Buscar por IP, MAC, nome ou fabricante…"
+      aria-label="Buscar dispositivos"
+      [value]="searchText()"
+      (input)="onSearch($any($event.target).value)"
+    />
+    <select class="select" aria-label="Reconhecimento" [value]="recognitionValue()" (change)="setRecognition($any($event.target).value)">
+      <option value="">Conhecidos e desconhecidos</option>
+      <option value="false">Somente desconhecidos</option>
+      <option value="true">Somente conhecidos</option>
+    </select>
+    <select class="select" aria-label="Situação" [value]="query().status ?? ''" (change)="setStatus($any($event.target).value)">
+      <option value="">Todas as situações</option>
+      <option value="ACTIVE">Ativos</option>
+      <option value="INACTIVE">Inativos</option>
+    </select>
+    <select class="select" aria-label="Tipo" [value]="query().type ?? ''" (change)="setType($any($event.target).value)">
+      <option value="">Todos os tipos</option>
+      @for (t of types; track t.value) {
+        <option [value]="t.value">{{ t.label }}</option>
+      }
+    </select>
+    @if (hasFilters()) {
+      <button class="btn btn-ghost" type="button" (click)="clearFilters()"><app-icon name="x" [size]="14" /> Limpar</button>
+    }
+  </div>
+
+  <div class="table-wrap" [style.opacity]="loading() ? 0.6 : 1">
+    <table class="table">
+      <thead>
+        <tr>
+          @for (c of columns; track c.key) {
+            <th [attr.aria-sort]="sortField() === c.sort ? (sortDesc() ? 'descending' : 'ascending') : null">
+              <button class="th-sort" type="button" (click)="sortBy(c)">
+                {{ c.label }}
+                @if (sortField() === c.sort) {
+                  <span aria-hidden="true">{{ sortDesc() ? '↓' : '↑' }}</span>
+                }
+              </button>
+            </th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @if (result(); as r) {
+          @for (d of r.content; track d.id) {
+            <tr class="clickable" (click)="open(d)" (keydown.enter)="open(d)" tabindex="0">
+              <td>
+                <div class="cell-main">{{ d.displayName }}</div>
+                <div class="cell-sub mono">{{ d.macAddress ?? 'MAC não identificado' }}</div>
+              </td>
+              <td class="mono">{{ d.ipAddress }}</td>
+              <td class="secondary">{{ d.vendor ?? '—' }}</td>
+              <td class="secondary">{{ typeLabel(d.type) }}</td>
+              <td><app-device-status [device]="d" /></td>
+              <td class="muted" [attr.title]="d.lastSeenAt">{{ timeAgo(d.lastSeenAt) }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td [attr.colspan]="columns.length">
+                <div class="empty">
+                  @if (hasFilters()) {
+                    <strong>Nenhum dispositivo corresponde aos filtros</strong>
+                    Ajuste a busca ou limpe os filtros.
+                  } @else {
+                    <strong>Nenhum dispositivo identificado ainda</strong>
+                    Inicie uma descoberta para encontrar os equipamentos da rede.
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        } @else {
+          @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+            <tr>
+              @for (c of columns; track c.key) {
+                <td><div class="skeleton">carregando</div></td>
+              }
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (result(); as r) {
+    <app-paginator [page]="r.page" [size]="r.size" [total]="r.totalElements" (pageChange)="goToPage($event)" />
+  }
+</div>

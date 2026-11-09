@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: netwatch-postgres
+    environment:
+      POSTGRES_DB: netwatch
+      POSTGRES_USER: netwatch
+      POSTGRES_PASSWORD: netwatch
+    ports:
+      - "5432:5432"
+    volumes:
+      - netwatch-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U netwatch -d netwatch"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  netwatch-pgdata:

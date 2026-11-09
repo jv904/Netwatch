@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: netwatch-api
+  datasource:
+    url: ${NETWATCH_DB_URL:jdbc:postgresql://localhost:5432/netwatch}
+    username: ${NETWATCH_DB_USER:netwatch}
+    password: ${NETWATCH_DB_PASSWORD:netwatch}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  mvc:
+    problemdetails:
+      enabled: true
+  data:
+    web:
+      pageable:
+        max-page-size: 200
+
+server:
+  port: ${NETWATCH_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+netwatch:
+  cors:
+    allowed-origins: ${NETWATCH_CORS_ORIGINS:http://localhost:4200}
+  discovery:
+    # Faixas que podem ser verificadas (somente redes privadas).
+    # Vazio = sub-redes privadas das interfaces desta máquina.
+    # Ex.: NETWATCH_DISCOVERY_AUTHORIZED_NETWORKS=192.168.0.0/24
+    authorized-networks: ${NETWATCH_DISCOVERY_AUTHORIZED_NETWORKS:}
+    max-hosts: 1024
+    concurrency: 64
+    probe-timeout: 800ms
+    tcp-ports: 445,80,443,22,139,3389,62078,8080
+    resolve-hostnames: true
+    schedule:
+      enabled: ${NETWATCH_DISCOVERY_SCHEDULE_ENABLED:false}
+      interval: 15m
+  ports:
+    timeout: 1500ms
+    concurrency: 100
+    max-ports: 1024

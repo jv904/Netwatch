@@ -1,0 +1,97 @@
+<a class="back" routerLink="/devices"><app-icon name="back" [size]="16" /> Dispositivos</a>
+
+@if (notFound()) {
+  <div class="card empty">
+    <strong>Dispositivo não encontrado</strong>
+    Ele pode ter sido excluído. <a class="link" routerLink="/devices">Voltar para a lista</a>
+  </div>
+} @else if (device(); as d) {
+  <div class="page-header">
+    <div>
+      <div class="row">
+        <h1>{{ d.displayName }}</h1>
+        <app-device-status [device]="d" />
+      </div>
+      <p class="mono">{{ d.ipAddress }} · {{ d.macAddress ?? 'MAC não identificado' }}</p>
+    </div>
+    <div class="row">
+      <button class="btn" type="button" (click)="toggleRecognized()">
+        <app-icon [name]="d.recognized ? 'help' : 'check'" [size]="16" />
+        {{ d.recognized ? 'Marcar como desconhecido' : 'Marcar como conhecido' }}
+      </button>
+      <button class="btn btn-danger" type="button" (click)="remove()"><app-icon name="trash" [size]="16" /> Excluir</button>
+    </div>
+  </div>
+
+  @if (!d.recognized) {
+    <div class="banner warn">
+      <app-icon name="alert" />
+      <span>
+        Este equipamento ainda não foi reconhecido. Isso não significa necessariamente uma invasão —
+        verifique se você reconhece o fabricante e o endereço antes de marcá-lo como conhecido.
+      </span>
+    </div>
+  }
+
+  <div class="grid grid-2-even">
+    <section class="card">
+      <div class="card-header"><h2><app-icon name="network" [size]="16" /> Identificação</h2></div>
+      <dl class="kv">
+        <dt>Endereço IP</dt>
+        <dd class="mono">{{ d.ipAddress }}</dd>
+        <dt>Endereço MAC</dt>
+        <dd class="mono">{{ d.macAddress ?? '—' }}</dd>
+        <dt>Fabricante</dt>
+        <dd>{{ d.vendor ?? 'Não identificado' }}</dd>
+        <dt>Nome na rede</dt>
+        <dd>{{ d.hostname ?? 'Não informado pelo equipamento' }}</dd>
+        <dt>Primeira identificação</dt>
+        <dd>{{ formatDateTime(d.firstSeenAt) }}</dd>
+        <dt>Última identificação</dt>
+        <dd>{{ formatDateTime(d.lastSeenAt) }} <span class="muted">({{ timeAgo(d.lastSeenAt) }})</span></dd>
+        <dt>Registrado em</dt>
+        <dd>{{ formatDateTime(d.createdAt) }}</dd>
+      </dl>
+    </section>
+
+    <section class="card">
+      <div class="card-header"><h2><app-icon name="settings" [size]="16" /> Informações do usuário</h2></div>
+      <form class="form" (submit)="$event.preventDefault(); save()">
+        <label class="field">
+          <span>Nome amigável</span>
+          <input class="input" maxlength="100" placeholder="Ex.: Notebook da recepção" [value]="name()" (input)="name.set($any($event.target).value)" />
+        </label>
+        <label class="field">
+          <span>Tipo</span>
+          <select class="select" [value]="type()" (change)="type.set($any($event.target).value)">
+            @for (t of types; track t.value) {
+              <option [value]="t.value">{{ t.label }}</option>
+            }
+          </select>
+        </label>
+        <label class="field">
+          <span>Observações</span>
+          <textarea class="textarea" maxlength="1000" placeholder="Responsável, localização, finalidade…" [value]="notes()" (input)="notes.set($any($event.target).value)"></textarea>
+        </label>
+        <div class="row">
+          <span class="spacer"></span>
+          <button class="btn" type="button" (click)="reset()" [disabled]="!dirty() || saving()">Descartar</button>
+          <button class="btn btn-primary" type="submit" [disabled]="!dirty() || saving()">
+            @if (saving()) { <span class="spinner"></span> }
+            Salvar
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div class="section">
+    <app-device-ports [deviceId]="d.id" />
+  </div>
+} @else {
+  <div class="skeleton" style="height: 56px; width: 340px; margin-bottom: 20px"></div>
+  <div class="grid grid-2-even">
+    <div class="skeleton" style="height: 280px"></div>
+    <div class="skeleton" style="height: 280px"></div>
+  </div>
+}

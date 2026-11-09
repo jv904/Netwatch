@@ -1,0 +1,15 @@
+# Regras gerais do repositório (cada projeto tem o seu próprio .gitignore)
+
+# Sistema operacional
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# IDEs
+.idea/
+*.iml
+
+# Logs e variáveis locais
+*.log
+.env
+.env.*

@@ -1,0 +1,37 @@
+.section {
+  margin-top: 16px;
+}
+
+.last-run {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.error-text {
+  margin: 0;
+  color: #f08080;
+}
+
+.error-banner {
+  background: var(--critical-soft);
+  border-color: rgba(208, 59, 59, 0.4);
+}
+
+.coming {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  border-style: dashed;
+  background: transparent;
+  color: var(--text-muted);
+
+  strong {
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  p {
+    margin: 2px 0 0;
+  }
+}

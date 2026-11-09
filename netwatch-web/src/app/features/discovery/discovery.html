@@ -1,0 +1,140 @@
+<div class="page-header">
+  <div>
+    <h1>Descoberta de dispositivos</h1>
+    <p>Verifica a rede autorizada e registra os equipamentos encontrados. Novos equipamentos entram como desconhecidos.</p>
+  </div>
+</div>
+
+@if (current(); as run) {
+  <div class="banner" role="status">
+    <span class="spinner"></span>
+    <div>
+      <strong>Descoberta em andamento em <span class="mono">{{ run.cidr }}</span></strong>
+      <div class="muted">Iniciada há {{ elapsed() }}. Uma rede /24 costuma levar de 10 a 30 segundos.</div>
+    </div>
+  </div>
+}
+
+<div class="grid grid-2">
+  <section class="card">
+    <div class="card-header">
+      <h2><app-icon name="network" [size]="16" /> Redes autorizadas</h2>
+    </div>
+
+    @if (networks(); as list) {
+      @if (list.length) {
+        <div class="networks" role="radiogroup" aria-label="Rede a verificar">
+          @for (n of list; track n.cidr) {
+            <label class="network" [class.selected]="selected() === n.cidr && !customCidr()">
+              <input type="radio" name="network" [value]="n.cidr" [checked]="selected() === n.cidr" (change)="selected.set(n.cidr); customCidr.set('')" />
+              <span class="network-main">
+                <span class="mono">{{ n.cidr }}</span>
+                <span class="muted">{{ n.source }}</span>
+              </span>
+              <span class="network-meta">
+                @if (n.virtual) {
+                  <span class="chip">Virtual</span>
+                }
+                <span class="muted nums">{{ n.hostCount }} endereços</span>
+              </span>
+            </label>
+          }
+        </div>
+      } @else {
+        <div class="empty"><strong>Nenhuma rede autorizada</strong>Configure <span class="mono">netwatch.discovery.authorized-networks</span> no backend.</div>
+      }
+    } @else {
+      <div class="skeleton" style="height: 110px"></div>
+    }
+
+    <label class="field custom">
+      <span>Ou informe uma faixa dentro das redes autorizadas (opcional)</span>
+      <input class="input mono" placeholder="192.168.0.0/25" [value]="customCidr()" (input)="customCidr.set($any($event.target).value)" />
+    </label>
+
+    <div class="row actions">
+      <span class="muted">Faixa: <span class="mono">{{ target() || '—' }}</span></span>
+      <span class="spacer"></span>
+      <button class="btn btn-primary" type="button" (click)="start()" [disabled]="!!current() || starting() || !target()">
+        @if (current() || starting()) {
+          <span class="spinner"></span> Em andamento…
+        } @else {
+          <app-icon name="radar" [size]="16" /> Iniciar descoberta
+        }
+      </button>
+    </div>
+  </section>
+
+  <section class="card how">
+    <div class="card-header"><h2><app-icon name="help" [size]="16" /> Como funciona</h2></div>
+    <ol>
+      <li>Cada endereço da faixa recebe um ping e tentativas de conexão em portas comuns.</li>
+      <li>A tabela ARP do sistema revela até os equipamentos que bloqueiam essas verificações.</li>
+      <li>O fabricante é identificado pelo endereço MAC.</li>
+      <li>Equipamentos já cadastrados têm a última identificação atualizada; os ausentes passam a inativos.</li>
+    </ol>
+    <p class="muted">
+      Somente redes privadas e autorizadas podem ser verificadas. A ausência de resposta não significa
+      necessariamente que o equipamento foi desligado.
+    </p>
+  </section>
+</div>
+
+<section class="card card-flush section">
+  <div class="card-header">
+    <h2><app-icon name="clock" [size]="16" /> Histórico de descobertas</h2>
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Início</th>
+          <th>Faixa</th>
+          <th>Situação</th>
+          <th>Origem</th>
+          <th class="num">Duração</th>
+          <th class="num">Verificados</th>
+          <th class="num">Encontrados</th>
+          <th class="num">Novos</th>
+          <th class="num">Inativados</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (history(); as h) {
+          @for (r of h.content; track r.id) {
+            <tr>
+              <td>
+                <div>{{ formatDateTime(r.startedAt) }}</div>
+                <div class="cell-sub">{{ timeAgo(r.startedAt) }}</div>
+              </td>
+              <td class="mono">{{ r.cidr }}</td>
+              <td>
+                <app-run-status [status]="r.status" />
+                @if (r.errorMessage) {
+                  <div class="cell-sub">{{ r.errorMessage }}</div>
+                }
+              </td>
+              <td class="secondary">{{ r.trigger === 'MANUAL' ? 'Manual' : 'Automática' }}</td>
+              <td class="num">{{ formatDuration(r.durationMs) }}</td>
+              <td class="num">{{ r.hostsScanned }}</td>
+              <td class="num">{{ r.devicesFound }}</td>
+              <td class="num">
+                @if (r.newDevices > 0) {
+                  <a class="link" routerLink="/devices" [queryParams]="{ recognized: 'false' }">{{ r.newDevices }}</a>
+                } @else {
+                  0
+                }
+              </td>
+              <td class="num">{{ r.inactivated }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="9"><div class="empty"><strong>Nenhuma descoberta ainda</strong>Inicie a primeira descoberta acima.</div></td></tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+  @if (history(); as h) {
+    <app-paginator [page]="h.page" [size]="h.size" [total]="h.totalElements" (pageChange)="goToPage($event)" />
+  }
+</section>

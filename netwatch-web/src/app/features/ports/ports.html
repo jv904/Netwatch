@@ -1,0 +1,115 @@
+<div class="page-header">
+  <div>
+    <h1>Portas e serviços</h1>
+    <p>Serviços disponíveis nos dispositivos verificados. Uma porta aberta indica exposição, não necessariamente uma vulnerabilidade.</p>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <section class="card">
+    <div class="card-header">
+      <h2><app-icon name="ports" [size]="16" /> Serviços mais expostos</h2>
+      <span class="hint">dispositivos com a porta aberta</span>
+    </div>
+    @if (services() !== null) {
+      <app-bar-chart
+        [items]="serviceBars()"
+        unit="dispositivos"
+        ariaLabel="Serviços mais expostos na rede"
+        emptyText="Nenhuma porta aberta registrada ainda."
+        [interactive]="true"
+        (itemSelect)="filterByService($event)"
+      />
+    } @else {
+      <div class="skeleton" style="height: 200px"></div>
+    }
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2><app-icon name="help" [size]="16" /> Como verificar</h2></div>
+    <ol class="steps">
+      <li>Abra um dispositivo em <a class="link" routerLink="/devices">Dispositivos</a>.</li>
+      <li>No painel <em>Portas e serviços</em>, escolha “Portas mais comuns” ou informe portas específicas.</li>
+      <li>Os resultados aparecem aqui e ficam no histórico; portas que passaram a aceitar conexões são marcadas como <em>Nova</em>.</li>
+    </ol>
+    <p class="muted small">
+      As verificações só são permitidas para dispositivos do inventário que estejam em redes autorizadas.
+      Total de exposições registradas: <strong class="nums">{{ totalOpen().toLocaleString('pt-BR') }}</strong>.
+    </p>
+  </section>
+</div>
+
+<section class="card card-flush" style="margin-top: 16px" id="tabela">
+  <div class="filters" style="padding: 14px 14px 0">
+    <div class="segmented" role="radiogroup" aria-label="Situação da porta">
+      @for (o of stateOptions; track o.value) {
+        <button type="button" role="radio" [class.active]="state() === o.value" [attr.aria-checked]="state() === o.value" (click)="setState(o.value)">
+          {{ o.label }}
+        </button>
+      }
+    </div>
+    <input
+      class="input"
+      type="search"
+      placeholder="Filtrar por IP, dispositivo, fabricante ou serviço…"
+      aria-label="Filtrar portas"
+      [value]="search()"
+      (input)="setSearch($any($event.target).value)"
+    />
+    @if (port(); as p) {
+      <button class="chip info chip-btn" type="button" (click)="clearPort()" aria-label="Remover filtro de porta">
+        Porta {{ p }} <app-icon name="x" [size]="12" />
+      </button>
+    }
+  </div>
+
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Dispositivo</th>
+          <th>Porta</th>
+          <th>Serviço associado</th>
+          <th>Situação</th>
+          <th>Aberta desde</th>
+          <th>Última verificação</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (result(); as r) {
+          @for (p of r.content; track p.deviceId + ':' + p.port) {
+            <tr class="clickable" tabindex="0" (click)="open(p)" (keydown.enter)="open(p)">
+              <td>
+                <div class="cell-main">{{ p.deviceName ?? '—' }}</div>
+                <div class="cell-sub"><span class="mono">{{ p.ipAddress }}</span>{{ p.vendor ? ' · ' + p.vendor : '' }}</div>
+              </td>
+              <td class="mono">{{ p.port }}/tcp</td>
+              <td class="secondary">{{ p.service ?? 'Não identificado' }}</td>
+              <td><app-port-state [state]="p.state" /></td>
+              <td class="muted">{{ p.openSince ? formatDateTime(p.openSince) : '—' }}</td>
+              <td class="muted nowrap">{{ timeAgo(p.lastCheckedAt) }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6">
+                <div class="empty">
+                  <strong>Nenhuma porta encontrada</strong>
+                  @if (search() || port() || state() !== 'OPEN') {
+                    Ajuste os filtros.
+                  } @else {
+                    Ainda não há portas abertas registradas. Verifique as portas de um dispositivo para começar.
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        } @else {
+          <tr><td colspan="6"><div class="skeleton" style="height: 120px"></div></td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  @if (result(); as r) {
+    <app-paginator [page]="r.page" [size]="r.size" [total]="r.totalElements" (pageChange)="page.set($event)" />
+  }
+</section>

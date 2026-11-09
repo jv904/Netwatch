@@ -1,0 +1,109 @@
+<div class="card card-flush">
+  <div class="card-header">
+    <h2><app-icon name="ports" [size]="16" /> Portas e serviços</h2>
+    <span class="spacer"></span>
+    @if (data()?.lastScan; as last) {
+      <span class="hint">Última verificação {{ timeAgo(last.startedAt) }}</span>
+    }
+  </div>
+
+  <div class="scan-form">
+    <div class="segmented" role="radiogroup" aria-label="Tipo de verificação">
+      <button type="button" role="radio" [class.active]="mode() === 'COMMON'" [attr.aria-checked]="mode() === 'COMMON'" (click)="mode.set('COMMON')">
+        Portas mais comuns
+      </button>
+      <button type="button" role="radio" [class.active]="mode() === 'CUSTOM'" [attr.aria-checked]="mode() === 'CUSTOM'" (click)="mode.set('CUSTOM')">
+        Portas específicas
+      </button>
+    </div>
+    @if (mode() === 'CUSTOM') {
+      <input
+        class="input mono"
+        placeholder="22,80,443,8000-8100"
+        aria-label="Portas a verificar"
+        [value]="customPorts()"
+        (input)="customPorts.set($any($event.target).value)"
+        (keydown.enter)="start()"
+      />
+    }
+    <button class="btn btn-primary" type="button" (click)="start()" [disabled]="scanning() || starting()">
+      @if (scanning() || starting()) {
+        <span class="spinner"></span> Verificando…
+      } @else {
+        <app-icon name="search" [size]="16" /> Verificar portas
+      }
+    </button>
+  </div>
+
+  @if (data(); as d) {
+    @if (d.lastScan; as last) {
+      <div class="scan-summary">
+        <app-run-status [status]="last.status" />
+        <span class="secondary">{{ last.requestedPorts }}</span>
+        <span class="muted">·</span>
+        <span class="nums"><strong>{{ last.openCount }}</strong> abertas</span>
+        <span class="nums muted">{{ last.closedCount }} fechadas</span>
+        <span class="nums muted">{{ last.filteredCount }} sem resposta</span>
+        @if (last.durationMs !== undefined) {
+          <span class="muted">· {{ formatDuration(last.durationMs) }}</span>
+        }
+        <span class="spacer"></span>
+        @if (d.ports.length) {
+          <label class="toggle">
+            <input type="checkbox" [checked]="showAll()" (change)="showAll.set($any($event.target).checked)" />
+            Mostrar fechadas e sem resposta
+          </label>
+        }
+      </div>
+      @if (last.errorMessage) {
+        <p class="error-text">{{ last.errorMessage }}</p>
+      }
+    }
+
+    @if (visiblePorts().length) {
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Porta</th>
+              <th>Serviço associado</th>
+              <th>Situação</th>
+              <th>Aberta desde</th>
+              <th>Última verificação</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of visiblePorts(); track p.port) {
+              <tr>
+                <td class="mono">
+                  {{ p.port }}/tcp
+                  @if (newlyOpened().has(p.port)) {
+                    <span class="chip serious new">Nova</span>
+                  }
+                </td>
+                <td class="secondary">{{ p.service ?? 'Não identificado' }}</td>
+                <td><app-port-state [state]="p.state" /></td>
+                <td class="muted">{{ p.openSince ? formatDateTime(p.openSince) : '—' }}</td>
+                <td class="muted">{{ timeAgo(p.lastCheckedAt) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else if (d.ports.length) {
+      <div class="empty"><strong>Nenhuma porta aberta encontrada</strong>As portas verificadas estão fechadas ou não responderam.</div>
+    } @else if (!scanning()) {
+      <div class="empty">
+        <strong>Nenhuma verificação realizada</strong>
+        Verifique as portas para descobrir quais serviços este dispositivo disponibiliza na rede.
+      </div>
+    }
+  } @else {
+    <div class="skeleton" style="height: 120px; margin: 0 18px 18px"></div>
+  }
+
+  <p class="note">
+    Uma porta aberta não significa automaticamente uma vulnerabilidade — indica que há um serviço aceitando conexões.
+    “Nova” marca portas que estavam fechadas na verificação anterior.
+  </p>
+</div>

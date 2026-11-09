@@ -1,0 +1,154 @@
+<div class="page-header">
+  <div>
+    <h1>Visão geral da rede</h1>
+    <p>Resumo da situação atual: equipamentos, desconhecidos e exposição de serviços.</p>
+  </div>
+</div>
+
+@if (loadError()) {
+  <div class="banner error-banner">
+    <app-icon name="alert" />
+    <span>Não foi possível carregar os dados. Verifique se a NetWatch API está em execução em <span class="mono">localhost:8080</span>.</span>
+  </div>
+}
+
+<section class="grid grid-kpi">
+  <app-kpi-card label="Dispositivos identificados" icon="devices" [value]="kpi()?.total ?? null" caption="Inventário da rede" />
+  <app-kpi-card label="Dispositivos ativos" icon="activity" tone="good" [value]="kpi()?.active ?? null" [caption]="kpi()?.inactiveCaption ?? ''" />
+  <app-kpi-card
+    label="Dispositivos desconhecidos"
+    icon="alert"
+    tone="warning"
+    [value]="kpi()?.unknown ?? null"
+    [caption]="kpi() ? kpi()!.unknownShare + '% ainda não reconhecidos' : ''"
+  />
+  <app-kpi-card label="Portas abertas" icon="ports" tone="info" [value]="kpi()?.openPorts ?? null" caption="Serviços expostos verificados" />
+</section>
+
+<section class="grid grid-2 section">
+  <div class="card">
+    <div class="card-header">
+      <h2><app-icon name="radar" [size]="16" /> Dispositivos encontrados por descoberta</h2>
+      <span class="spacer"></span>
+      <a class="btn btn-sm" routerLink="/discovery">Ver descobertas</a>
+    </div>
+    <app-area-chart
+      [points]="history()"
+      [height]="230"
+      unit="dispositivos"
+      ariaLabel="Dispositivos encontrados em cada descoberta concluída"
+      emptyText="Nenhuma descoberta concluída ainda. Clique em “Nova descoberta” para começar."
+    />
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2><app-icon name="clock" [size]="16" /> Última descoberta</h2>
+    </div>
+    @if (overview(); as o) {
+      @if (o.lastDiscovery; as run) {
+        <div class="last-run">
+          <div class="row">
+            <app-run-status [status]="run.status" />
+            <span class="muted">{{ timeAgo(run.startedAt) }}</span>
+          </div>
+          <dl class="kv">
+            <dt>Faixa verificada</dt>
+            <dd class="mono">{{ run.cidr }}</dd>
+            <dt>Início</dt>
+            <dd>{{ formatDateTime(run.startedAt) }}</dd>
+            <dt>Duração</dt>
+            <dd>{{ formatDuration(run.durationMs) }}</dd>
+            <dt>Endereços verificados</dt>
+            <dd class="nums">{{ run.hostsScanned }}</dd>
+            <dt>Dispositivos encontrados</dt>
+            <dd class="nums">{{ run.devicesFound }}</dd>
+            <dt>Novos</dt>
+            <dd class="nums">{{ run.newDevices }}</dd>
+            <dt>Ficaram inativos</dt>
+            <dd class="nums">{{ run.inactivated }}</dd>
+          </dl>
+          @if (run.errorMessage) {
+            <p class="error-text">{{ run.errorMessage }}</p>
+          }
+        </div>
+      } @else {
+        <div class="empty"><strong>Nenhuma descoberta realizada</strong>Inicie uma descoberta para identificar os equipamentos da rede.</div>
+      }
+    } @else {
+      <div class="skeleton" style="height: 180px"></div>
+    }
+  </div>
+</section>
+
+<section class="grid grid-2-even section">
+  <div class="card">
+    <div class="card-header">
+      <h2><app-icon name="devices" [size]="16" /> Principais fabricantes</h2>
+      <span class="hint">identificados pelo endereço MAC</span>
+    </div>
+    <app-bar-chart
+      [items]="vendors()"
+      unit="dispositivos"
+      ariaLabel="Quantidade de dispositivos por fabricante"
+      emptyText="Nenhum dispositivo identificado ainda."
+      [interactive]="true"
+      (itemSelect)="openVendor($event)"
+    />
+  </div>
+
+  <div class="card card-flush">
+    <div class="card-header">
+      <h2><app-icon name="alert" [size]="16" /> Desconhecidos recentes</h2>
+      <span class="spacer"></span>
+      <a class="btn btn-sm" routerLink="/devices" [queryParams]="{ recognized: 'false' }">
+        Ver todos ({{ unknownTotal().toLocaleString('pt-BR') }})
+      </a>
+    </div>
+    @if (unknown(); as list) {
+      @if (list.length) {
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Dispositivo</th>
+                <th>Fabricante</th>
+                <th>Visto</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (d of list; track d.id) {
+                <tr class="clickable" [routerLink]="['/devices', d.id]">
+                  <td>
+                    <div class="cell-main mono">{{ d.ipAddress }}</div>
+                    <div class="cell-sub mono">{{ d.macAddress ?? 'MAC não identificado' }}</div>
+                  </td>
+                  <td class="secondary">{{ d.vendor ?? '—' }}</td>
+                  <td class="muted nowrap">{{ timeAgo(d.lastSeenAt) }}</td>
+                  <td class="num">
+                    <button class="btn btn-sm" type="button" (click)="markKnown(d, $event)">
+                      <app-icon name="check" [size]="14" /> Conhecido
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="empty"><strong>Tudo reconhecido</strong>Não há dispositivos desconhecidos no momento.</div>
+      }
+    } @else {
+      <div class="skeleton" style="height: 200px; margin: 16px"></div>
+    }
+  </div>
+</section>
+
+<section class="card coming section">
+  <app-icon name="shield" />
+  <div>
+    <strong>Alertas e monitoramento de tráfego</strong>
+    <p class="muted">Os indicadores de alertas ativos, eventos e volume de tráfego aparecerão aqui quando as próximas fases forem concluídas.</p>
+  </div>
+</section>

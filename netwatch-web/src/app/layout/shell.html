@@ -1,0 +1,86 @@
+<div class="app" [class.menu-open]="menuOpen()">
+  <aside class="sidebar" aria-label="Navegação principal">
+    <a class="brand" routerLink="/dashboard">
+      <span class="brand-mark"><app-icon name="shield" [size]="18" /></span>
+      <span class="brand-name">NetWatch</span>
+    </a>
+
+    <div class="api-status" [class.off]="apiOnline() === false" role="status">
+      <span class="pulse"></span>
+      @switch (apiOnline()) {
+        @case (true) { Online }
+        @case (false) { API indisponível }
+        @default { Conectando… }
+      }
+    </div>
+
+    <nav>
+      @for (item of nav; track item.label) {
+        @if (item.link) {
+          <a class="nav-item" [routerLink]="item.link" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: false }">
+            <app-icon [name]="item.icon" />
+            <span class="nav-text">
+              <span class="nav-label">{{ item.label }}</span>
+              <span class="nav-desc">{{ item.description }}</span>
+            </span>
+          </a>
+        } @else {
+          <span class="nav-item disabled" aria-disabled="true">
+            <app-icon [name]="item.icon" />
+            <span class="nav-text">
+              <span class="nav-label">{{ item.label }}</span>
+              <span class="nav-desc">{{ item.description }}</span>
+            </span>
+            <span class="soon">Em breve</span>
+          </span>
+        }
+      }
+    </nav>
+
+    <p class="sidebar-foot">Ferramenta de observação. Monitore apenas redes que você tem autorização para analisar.</p>
+  </aside>
+
+  <button class="scrim" type="button" aria-label="Fechar menu" (click)="menuOpen.set(false)"></button>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="btn btn-ghost menu-btn" type="button" aria-label="Abrir menu" (click)="menuOpen.set(true)">
+        <app-icon name="menu" />
+      </button>
+      <form class="search" role="search" (submit)="submitSearch($event)">
+        <app-icon name="search" [size]="16" />
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Buscar IP, MAC, nome ou fabricante…"
+          aria-label="Buscar dispositivos"
+          [value]="search()"
+          (input)="search.set($any($event.target).value)"
+        />
+      </form>
+      <span class="spacer"></span>
+      <button class="btn btn-primary" type="button" (click)="startDiscovery()" [disabled]="startingDiscovery()">
+        @if (startingDiscovery()) {
+          <span class="spinner"></span>
+        } @else {
+          <app-icon name="radar" [size]="16" />
+        }
+        Nova descoberta
+      </button>
+    </header>
+
+    <main class="content">
+      <router-outlet />
+    </main>
+  </div>
+
+  <div class="toasts" aria-live="polite">
+    @for (t of toast.toasts(); track t.id) {
+      <div class="toast" [class]="t.kind" role="status">
+        <app-icon [name]="t.kind === 'error' ? 'alert' : t.kind === 'success' ? 'check' : 'radar'" [size]="16" />
+        <span>{{ t.message }}</span>
+        <button type="button" aria-label="Fechar aviso" (click)="toast.dismiss(t.id)"><app-icon name="x" [size]="14" /></button>
+      </div>
+    }
+  </div>
+</div>
