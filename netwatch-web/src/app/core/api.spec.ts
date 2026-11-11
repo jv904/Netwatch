@@ -52,4 +52,37 @@ describe('Api', () => {
     expect(req.request.params.get('state')).toBe('OPEN');
     expect(req.request.params.get('port')).toBe('445');
   });
+
+  it('inicia a captura enviando só o que foi escolhido', () => {
+    api.startCapture().subscribe();
+    expect(http.expectOne('/api/capture/sessions').request.body).toEqual({});
+
+    api.startCapture('\Device\NPF_{X}', 30).subscribe();
+    expect(http.expectOne('/api/capture/sessions').request.body).toEqual({
+      interfaceName: '\Device\NPF_{X}',
+      durationMinutes: 30,
+    });
+
+    api.stopCapture('abc').subscribe();
+    expect(http.expectOne('/api/capture/sessions/abc/stop').request.method).toBe('POST');
+  });
+
+  it('envia somente os filtros preenchidos na listagem de fluxos', () => {
+    api.trafficFlows({ ip: ' 192.168.0.10 ', protocol: '', port: null, window: '24h', page: 1, size: 25 }).subscribe();
+
+    const req = http.expectOne((r) => r.url === '/api/traffic/flows');
+    expect(req.request.params.get('ip')).toBe('192.168.0.10');
+    expect(req.request.params.has('protocol')).toBe(false);
+    expect(req.request.params.has('port')).toBe(false);
+    expect(req.request.params.get('window')).toBe('24h');
+    expect(req.request.params.get('page')).toBe('1');
+  });
+
+  it('consulta o resumo e o tráfego do dispositivo pelo período', () => {
+    api.trafficSummary('7d').subscribe();
+    expect(http.expectOne((r) => r.url === '/api/traffic/summary').request.params.get('window')).toBe('7d');
+
+    api.deviceTraffic('d1').subscribe();
+    expect(http.expectOne((r) => r.url === '/api/devices/d1/traffic').request.params.get('window')).toBe('24h');
+  });
 });

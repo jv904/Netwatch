@@ -174,3 +174,119 @@ export interface DashboardOverview {
   discoveryHistory: { startedAt: string; devicesFound: number; newDevices: number }[];
   topVendors: { vendor: string | null; devices: number }[];
 }
+
+// ---------- Tráfego (captura de pacotes) ----------
+
+export type CaptureStatus = 'RUNNING' | 'COMPLETED' | 'STOPPED' | 'FAILED';
+export type CaptureMode = 'PACKETS' | 'CONNECTIONS';
+export type TrafficProtocol = 'TCP' | 'UDP' | 'ICMP' | 'IGMP' | 'ARP' | 'OTHER';
+export type TrafficWindow = '1h' | '24h' | '7d';
+
+export interface CaptureSession {
+  id: string;
+  mode: CaptureMode;
+  interfaceName: string;
+  interfaceDescription: string | null;
+  localAddress: string | null;
+  filter: string;
+  status: CaptureStatus;
+  startedAt: string;
+  plannedEndAt: string;
+  finishedAt?: string;
+  durationMs?: number;
+  packets: number;
+  bytes: number;
+  droppedPackets: number;
+  newDevices: number;
+  errorMessage?: string;
+}
+
+export interface CaptureState {
+  enabled: boolean;
+  available: boolean;
+  mode: CaptureMode | null;
+  packetCaptureAvailable: boolean;
+  connectionTableAvailable: boolean;
+  reason: string | null;
+  libraryVersion: string | null;
+  authorizedNetworks: string[];
+  maxDurationMinutes: number;
+  defaultDurationMinutes: number;
+  retentionDays: number;
+  activeSession: CaptureSession | null;
+  lastSession: CaptureSession | null;
+}
+
+export interface CaptureInterface {
+  name: string;
+  description: string;
+  macAddress: string | null;
+  addresses: string[];
+  eligible: boolean;
+  authorizedAddress: string | null;
+}
+
+export interface TrafficFlow {
+  id: string;
+  sessionId: string;
+  protocol: TrafficProtocol;
+  srcIp: string;
+  srcPort: number | null;
+  srcDeviceId: string | null;
+  srcName: string | null;
+  dstIp: string;
+  dstPort: number | null;
+  dstDeviceId: string | null;
+  dstName: string | null;
+  servicePort: number | null;
+  service: string | null;
+  processName: string | null;
+  connectionState: string | null;
+  packets: number;
+  bytes: number;
+  tcpFlags: number;
+  firstSeen: string;
+  lastSeen: string;
+}
+
+export interface TrafficSummary {
+  window: TrafficWindow;
+  since: string;
+  until: string;
+  bucketSeconds: number;
+  totals: { packets: number; bytes: number; flows: number; hosts: number; connections: number };
+  series: { at: string; packets: number; bytes: number; connections: number }[];
+  protocols: { protocol: TrafficProtocol; packets: number; bytes: number }[];
+  topHosts: {
+    ip: string;
+    deviceId: string | null;
+    name: string | null;
+    local: boolean;
+    bytesSent: number;
+    bytesReceived: number;
+    packets: number;
+    flows: number;
+  }[];
+  topServices: { protocol: TrafficProtocol; port: number; service: string | null; bytes: number; packets: number; flows: number }[];
+}
+
+export interface FlowQuery {
+  ip?: string;
+  deviceId?: string;
+  protocol?: TrafficProtocol | '';
+  port?: number | null;
+  window?: TrafficWindow;
+  page?: number;
+  size?: number;
+}
+
+export interface DeviceTraffic {
+  window: TrafficWindow;
+  bytesSent: number;
+  bytesReceived: number;
+  packetsSent: number;
+  packetsReceived: number;
+  flows: number;
+  peers: { ip: string; deviceId: string | null; name: string | null; bytes: number; packets: number; flows: number }[];
+  recentFlows: TrafficFlow[];
+}

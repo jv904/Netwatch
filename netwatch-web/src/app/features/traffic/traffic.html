@@ -1,0 +1,380 @@
+<div class="page-header">
+  <div>
+    <h1>Tráfego da rede</h1>
+    <p>Comunicação observada nas redes autorizadas. Só os cabeçalhos dos pacotes são lidos; o conteúdo nunca é armazenado.</p>
+  </div>
+  <span class="spacer"></span>
+  <div class="segmented" role="radiogroup" aria-label="Período">
+    @for (w of windows; track w.value) {
+      <button type="button" role="radio" [class.active]="window() === w.value" [attr.aria-checked]="window() === w.value" (click)="setWindow(w.value)">
+        {{ w.label }}
+      </button>
+    }
+  </div>
+</div>
+
+@if (stateError()) {
+  <div class="banner error-banner">
+    <app-icon name="alert" />
+    <span>Não foi possível consultar a captura. Verifique se a NetWatch API está em execução.</span>
+  </div>
+} @else if (state(); as s) {
+  @if (!s.enabled) {
+    <div class="banner warn-banner">
+      <app-icon name="alert" />
+      <div>
+        <strong>A captura de pacotes está desativada.</strong>
+        <ol class="steps">
+          <li>Instale o <a class="link" href="https://npcap.com/#download" target="_blank" rel="noopener">Npcap</a> nesta máquina (no Linux, a libpcap).</li>
+          <li>Inicie a API com <span class="mono">NETWATCH_CAPTURE_ENABLED=true</span>.</li>
+          <li>Volte a esta tela e escolha a interface de rede.</li>
+        </ol>
+      </div>
+    </div>
+  } @else if (!s.available) {
+    <div class="banner error-banner">
+      <app-icon name="alert" />
+      <div>
+        <strong>Captura indisponível.</strong>
+        <div>{{ s.reason }}</div>
+      </div>
+    </div>
+  } @else if (s.mode === 'CONNECTIONS') {
+    <div class="banner">
+      <app-icon name="help" />
+      <div>
+        <strong>Modo tabela de conexões</strong>
+        <div class="muted">
+          Sem o driver de captura (Npcap), o NetWatch lê as conexões desta máquina pela tabela do sistema: com quem
+          ela conversa, portas, serviços e o programa responsável. Volume de dados, pacotes e o tráfego de outros
+          equipamentos não são medidos neste modo.
+        </div>
+      </div>
+    </div>
+  }
+}
+
+@if (active(); as a) {
+  <div class="banner" role="status">
+    <span class="spinner"></span>
+    <div class="live">
+      <strong>
+        @if (a.mode === 'CONNECTIONS') {
+          Observando as conexões desta máquina ({{ a.localAddress }})
+        } @else {
+          Capturando em {{ a.interfaceDescription ?? a.interfaceName }}
+        }
+      </strong>
+      <div class="muted">
+        Há {{ elapsed() }} · termina em {{ remaining() }}
+        @if (a.mode === 'PACKETS') {
+          · <span class="nums">{{ a.packets.toLocaleString('pt-BR') }}</span> pacotes · {{ formatBytes(a.bytes) }}
+        }
+        @if (a.newDevices > 0) {
+          · <a class="link" routerLink="/devices" [queryParams]="{ recognized: 'false' }">{{ a.newDevices }} novos dispositivos</a>
+        }
+      </div>
+    </div>
+    <span class="spacer"></span>
+    <button class="btn btn-danger btn-sm" type="button" (click)="stop()" [disabled]="stopping()">
+      @if (stopping()) { <span class="spinner"></span> } @else { <app-icon name="stop" [size]="14" /> }
+      Parar
+    </button>
+  </div>
+}
+
+<section class="grid grid-kpi">
+  @if (summary() && !hasVolume() && connectionsMode()) {
+    <app-kpi-card label="Conexões simultâneas" icon="traffic" [value]="summary()!.totals.connections" caption="Pico no período" />
+    <app-kpi-card label="Pacotes" icon="activity" tone="info" value="—" caption="Não medido sem o Npcap" />
+  } @else {
+    <app-kpi-card label="Volume" icon="traffic" [value]="summary() ? formatBytes(summary()!.totals.bytes) : null" caption="Tráfego observado no período" />
+    <app-kpi-card label="Pacotes" icon="activity" tone="info" [value]="summary()?.totals?.packets?.toLocaleString('pt-BR') ?? null" caption="Pacotes nas redes autorizadas" />
+  }
+  <app-kpi-card label="Fluxos" icon="ports" [value]="summary()?.totals?.flows?.toLocaleString('pt-BR') ?? null" caption="Conversas origem → destino" />
+  <app-kpi-card label="Hosts da rede" icon="devices" tone="good" [value]="summary()?.totals?.hosts ?? null" caption="Endereços locais com tráfego" />
+</section>
+
+<div class="grid grid-2 section">
+  <section class="card">
+    <div class="card-header">
+      <h2><app-icon name="traffic" [size]="16" /> {{ volumeChart().title }}</h2>
+      @if (volumeChart().unit) {
+        <span class="hint">{{ hasVolume() ? 'em ' + volumeChart().unit : 'pico por intervalo' }}</span>
+      }
+    </div>
+    @if (summary()) {
+      <app-area-chart
+        [points]="volumeChart().points"
+        [height]="240"
+        [unit]="volumeChart().unit"
+        [ariaLabel]="volumeChart().title + ' ao longo do período'"
+        emptyText="Nenhum tráfego registrado no período. Inicie uma captura para começar."
+      />
+      @if (protocolShares().length) {
+        <div class="protocols" aria-label="Protocolos">
+          @for (p of protocolShares(); track p.protocol) {
+            <span class="chip" [title]="p.packets.toLocaleString('pt-BR') + ' pacotes'">
+              {{ p.protocol }} <span class="nums muted">{{ p.share.toLocaleString('pt-BR') }}%</span>
+            </span>
+          }
+        </div>
+      }
+    } @else {
+      <div class="skeleton" style="height: 240px"></div>
+    }
+  </section>
+
+  <section class="card">
+    <div class="card-header">
+      <h2><app-icon name="play" [size]="16" /> Captura</h2>
+      @if (state()?.libraryVersion; as v) {
+        <span class="hint mono" [title]="v">{{ v.split(',')[0] }}</span>
+      }
+    </div>
+
+    @if (state(); as s) {
+      @if (s.available) {
+        @if (s.mode === 'CONNECTIONS') {
+          <dl class="kv">
+            <dt>Fonte</dt>
+            <dd>Tabela de conexões do sistema (sem driver)</dd>
+            <dt>Atualização</dt>
+            <dd>a cada 5 segundos</dd>
+          </dl>
+          <label class="field field-gap">
+            <span>Duração</span>
+            <select class="select" [value]="duration()" (change)="duration.set(+$any($event.target).value)" [disabled]="!!active()">
+              @for (m of durationOptions(); track m) {
+                <option [value]="m" [selected]="m === duration()">{{ m < 60 ? m + ' minutos' : m / 60 + (m === 60 ? ' hora' : ' horas') }}</option>
+              }
+            </select>
+          </label>
+        } @else if (eligibleInterfaces().length) {
+          <label class="field">
+            <span>Interface de rede</span>
+            <select class="select" [value]="selectedInterface()" (change)="selectedInterface.set($any($event.target).value)" [disabled]="!!active()">
+              @for (i of eligibleInterfaces(); track i.name) {
+                <option [value]="i.name" [selected]="i.name === selectedInterface()">{{ i.description }} — {{ i.authorizedAddress }}</option>
+              }
+            </select>
+          </label>
+          <label class="field field-gap">
+            <span>Duração</span>
+            <select class="select" [value]="duration()" (change)="duration.set(+$any($event.target).value)" [disabled]="!!active()">
+              @for (m of durationOptions(); track m) {
+                <option [value]="m" [selected]="m === duration()">{{ m < 60 ? m + ' minutos' : m / 60 + (m === 60 ? ' hora' : ' horas') }}</option>
+              }
+            </select>
+          </label>
+        } @else {
+          <div class="empty"><strong>Nenhuma interface na rede autorizada</strong>Nenhuma placa de rede tem endereço em {{ s.authorizedNetworks.join(', ') }}.</div>
+        }
+        <div class="row actions">
+          <span class="muted">Restrita a <span class="mono">{{ s.authorizedNetworks.join(', ') || '—' }}</span></span>
+          <span class="spacer"></span>
+          <button class="btn btn-primary" type="button" (click)="start()" [disabled]="!!active() || starting() || (s.mode === 'PACKETS' && !eligibleInterfaces().length)">
+            @if (active() || starting()) {
+              <span class="spinner"></span> Observando…
+            } @else {
+              <app-icon name="play" [size]="14" /> {{ s.mode === 'CONNECTIONS' ? 'Iniciar observação' : 'Iniciar captura' }}
+            }
+          </button>
+        </div>
+      }
+      <ul class="notes">
+        @if (s.mode === 'CONNECTIONS') {
+          <li>Só são lidos endereços, portas, estado da conexão e o nome do programa. Nenhum conteúdo é acessado.</li>
+          <li>Vizinhos da rede que conversam com esta máquina são identificados pela tabela ARP e entram no inventário.</li>
+        } @else {
+          <li>São lidos só os primeiros 128 bytes de cada pacote: endereços, portas e protocolo. Conteúdo, senhas e páginas não são gravados.</li>
+          <li>Em rede com switch, esta máquina enxerga o próprio tráfego e o de broadcast/multicast (ARP, DHCP, mDNS). Para ver a rede inteira é preciso espelhamento de porta no switch.</li>
+          <li>Equipamentos que aparecem no tráfego entram no inventário como na descoberta.</li>
+        }
+        <li>Os dados ficam guardados por {{ s.retentionDays }} dias.</li>
+      </ul>
+    } @else {
+      <div class="skeleton" style="height: 200px"></div>
+    }
+  </section>
+</div>
+
+<div class="grid grid-2 section">
+  <section class="card">
+    <div class="card-header">
+      <h2><app-icon name="devices" [size]="16" /> Hosts com mais tráfego</h2>
+      @if (hostBars().items.length) {
+        <span class="hint">{{ hasVolume() ? 'enviado + recebido, em ' + hostBars().unit : 'número de fluxos' }}</span>
+      }
+    </div>
+    @if (summary()) {
+      <app-bar-chart
+        [items]="hostBars().items"
+        [unit]="hostBars().unit"
+        ariaLabel="Hosts com mais tráfego no período"
+        emptyText="Sem tráfego no período."
+        [interactive]="true"
+        (itemSelect)="filterByHost($event)"
+      />
+    } @else {
+      <div class="skeleton" style="height: 200px"></div>
+    }
+  </section>
+
+  <section class="card">
+    <div class="card-header">
+      <h2><app-icon name="ports" [size]="16" /> Serviços mais usados</h2>
+      @if (serviceBars().items.length) {
+        <span class="hint">{{ hasVolume() ? 'em ' + serviceBars().unit : 'número de fluxos' }}</span>
+      }
+    </div>
+    @if (summary()) {
+      <app-bar-chart
+        [items]="serviceBars().items"
+        [unit]="serviceBars().unit"
+        ariaLabel="Serviços com mais tráfego no período"
+        emptyText="Sem tráfego TCP/UDP no período."
+        [interactive]="true"
+        (itemSelect)="filterByService($event)"
+      />
+    } @else {
+      <div class="skeleton" style="height: 200px"></div>
+    }
+  </section>
+</div>
+
+<section class="card card-flush section" id="fluxos">
+  <div class="card-header pad">
+    <h2><app-icon name="activity" [size]="16" /> Fluxos</h2>
+  </div>
+  <div class="filters pad">
+    <input class="input" type="search" placeholder="Filtrar por IP de origem ou destino…" aria-label="Filtrar por IP" [value]="ipFilter()" (input)="setIp($any($event.target).value)" />
+    <select class="select" aria-label="Protocolo" [value]="protocolFilter()" (change)="setProtocol($any($event.target).value)">
+      <option value="">Todos os protocolos</option>
+      @for (p of protocols; track p) {
+        <option [value]="p" [selected]="p === protocolFilter()">{{ p === 'OTHER' ? 'Outros' : p }}</option>
+      }
+    </select>
+    <input class="input port" type="number" min="1" max="65535" placeholder="Porta" aria-label="Porta" [value]="portFilter() ?? ''" (input)="setPort($any($event.target).value)" />
+    @if (ipFilter() || protocolFilter() || portFilter()) {
+      <button class="btn btn-ghost btn-sm" type="button" (click)="clearFilters()"><app-icon name="x" [size]="14" /> Limpar</button>
+    }
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Último pacote</th>
+          <th>Protocolo</th>
+          <th>Origem</th>
+          <th>Destino</th>
+          <th>Serviço</th>
+          <th>Programa</th>
+          <th class="num">Pacotes</th>
+          <th class="num">Volume</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (flows(); as f) {
+          @for (flow of f.content; track flow.id) {
+            <tr>
+              <td>
+                <div>{{ timeAgo(flow.lastSeen, now()) }}</div>
+                <div class="cell-sub">{{ formatDateTime(flow.lastSeen) }}</div>
+              </td>
+              <td><span class="chip">{{ flow.protocol }}</span></td>
+              <td>
+                @if (flow.srcDeviceId) {
+                  <a class="cell-main link" [routerLink]="['/devices', flow.srcDeviceId]">{{ flow.srcName }}</a>
+                }
+                <div class="mono" [class.cell-sub]="flow.srcDeviceId">{{ endpoint(flow.srcIp, flow.srcPort) }}</div>
+              </td>
+              <td>
+                @if (flow.dstDeviceId) {
+                  <a class="cell-main link" [routerLink]="['/devices', flow.dstDeviceId]">{{ flow.dstName }}</a>
+                }
+                <div class="mono" [class.cell-sub]="flow.dstDeviceId">{{ endpoint(flow.dstIp, flow.dstPort) }}</div>
+              </td>
+              <td class="secondary">{{ flow.service ?? '—' }}</td>
+              <td>
+                <div class="secondary">{{ flow.processName ?? '—' }}</div>
+                @if (flow.connectionState) {
+                  <div class="cell-sub">{{ flow.connectionState }}</div>
+                }
+              </td>
+              <td class="num">{{ flow.packets ? flow.packets.toLocaleString('pt-BR') : '—' }}</td>
+              <td class="num">{{ flow.bytes ? formatBytes(flow.bytes) : '—' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8"><div class="empty"><strong>Nenhum fluxo encontrado</strong>Ajuste os filtros, mude o período ou inicie uma observação.</div></td></tr>
+          }
+        } @else {
+          <tr><td colspan="8"><div class="skeleton" style="height: 120px"></div></td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  @if (flows(); as f) {
+    <app-paginator [page]="f.page" [size]="f.size" [total]="f.totalElements" (pageChange)="flowPage.set($event)" />
+  }
+</section>
+
+<section class="card card-flush section">
+  <div class="card-header pad">
+    <h2><app-icon name="clock" [size]="16" /> Sessões de captura</h2>
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Início</th>
+          <th>Interface</th>
+          <th>Situação</th>
+          <th class="num">Duração</th>
+          <th class="num">Pacotes</th>
+          <th class="num">Volume</th>
+          <th class="num">Perdidos</th>
+          <th class="num">Novos</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (sessions(); as page) {
+          @for (s of page.content; track s.id) {
+            <tr>
+              <td>
+                <div>{{ formatDateTime(s.startedAt) }}</div>
+                <div class="cell-sub">{{ timeAgo(s.startedAt, now()) }}</div>
+              </td>
+              <td>
+                <div>{{ s.interfaceDescription ?? s.interfaceName }}</div>
+                <div class="cell-sub mono">{{ s.localAddress }} · {{ s.mode === 'CONNECTIONS' ? 'conexões' : 'pacotes' }}</div>
+              </td>
+              <td>
+                <app-capture-status [status]="s.status" />
+                @if (s.errorMessage) {
+                  <div class="cell-sub">{{ s.errorMessage }}</div>
+                }
+              </td>
+              <td class="num">{{ s.status === 'RUNNING' ? '—' : formatDuration(s.durationMs) }}</td>
+              @if (s.mode === 'CONNECTIONS') {
+                <td class="num">—</td>
+                <td class="num">—</td>
+                <td class="num">—</td>
+              } @else {
+                <td class="num">{{ s.packets.toLocaleString('pt-BR') }}</td>
+                <td class="num">{{ formatBytes(s.bytes) }}</td>
+                <td class="num">{{ s.droppedPackets.toLocaleString('pt-BR') }}</td>
+              }
+              <td class="num">{{ s.newDevices }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="8"><div class="empty"><strong>Nenhuma captura ainda</strong>As sessões aparecem aqui assim que a primeira captura for iniciada.</div></td></tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+  @if (sessions(); as page) {
+    <app-paginator [page]="page.page" [size]="page.size" [total]="page.totalElements" (pageChange)="goToSessionPage($event)" />
+  }
+</section>

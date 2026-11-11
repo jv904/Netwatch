@@ -1,0 +1,95 @@
+<section class="card">
+  <div class="card-header">
+    <h2><app-icon name="traffic" [size]="16" /> Tráfego</h2>
+    <span class="spacer"></span>
+    <div class="segmented" role="radiogroup" aria-label="Período do tráfego">
+      @for (w of windows; track w.value) {
+        <button type="button" role="radio" [class.active]="window() === w.value" [attr.aria-checked]="window() === w.value" (click)="window.set(w.value)">
+          {{ w.label }}
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (!loaded()) {
+    <div class="skeleton" style="height: 120px"></div>
+  } @else if (data(); as d) {
+    @if (hasTraffic()) {
+      <div class="totals">
+        @if (hasVolume()) {
+          <div class="total">
+            <div class="label">Enviado</div>
+            <div class="value nums">{{ formatBytes(d.bytesSent) }}</div>
+            <div class="cell-sub nums">{{ d.packetsSent.toLocaleString('pt-BR') }} pacotes</div>
+          </div>
+          <div class="total">
+            <div class="label">Recebido</div>
+            <div class="value nums">{{ formatBytes(d.bytesReceived) }}</div>
+            <div class="cell-sub nums">{{ d.packetsReceived.toLocaleString('pt-BR') }} pacotes</div>
+          </div>
+        }
+        <div class="total">
+          <div class="label">Fluxos</div>
+          <div class="value nums">{{ d.flows.toLocaleString('pt-BR') }}</div>
+          <div class="cell-sub">{{ hasVolume() ? 'conversas no período' : 'conexões observadas (sem medir volume)' }}</div>
+        </div>
+      </div>
+
+      <h3>Com quem mais se comunicou</h3>
+      <ul class="peers">
+        @for (p of d.peers; track p.ip) {
+          <li>
+            <span class="who">
+              @if (p.deviceId) {
+                <a class="link" [routerLink]="['/devices', p.deviceId]">{{ p.name }}</a>
+                <span class="muted mono"> {{ p.ip }}</span>
+              } @else {
+                <span class="mono">{{ p.ip }}</span>
+              }
+            </span>
+            <span class="nums">{{ hasVolume() ? formatBytes(p.bytes) : p.flows + (p.flows === 1 ? ' fluxo' : ' fluxos') }}</span>
+          </li>
+        }
+      </ul>
+
+      <h3>Fluxos recentes</h3>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Último pacote</th>
+              <th>Protocolo</th>
+              <th>Origem</th>
+              <th>Destino</th>
+              <th>Serviço</th>
+              <th class="num">Volume</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of d.recentFlows; track f.id) {
+              <tr>
+                <td>{{ timeAgo(f.lastSeen) }}</td>
+                <td><span class="chip">{{ f.protocol }}</span></td>
+                <td class="mono">{{ endpoint(f.srcIp, f.srcPort) }}</td>
+                <td class="mono">{{ endpoint(f.dstIp, f.dstPort) }}</td>
+                <td class="secondary">{{ f.service ?? f.processName ?? '—' }}</td>
+                <td class="num">{{ f.bytes ? formatBytes(f.bytes) : '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="row" style="margin-top: 12px">
+        <span class="spacer"></span>
+        <a class="btn btn-sm" routerLink="/traffic">Ver todo o tráfego</a>
+      </div>
+    } @else {
+      <div class="empty">
+        <strong>Nenhum tráfego registrado no período</strong>
+        O tráfego aparece aqui quando há uma captura em andamento na tela <a class="link" routerLink="/traffic">Tráfego</a>.
+      </div>
+    }
+  } @else {
+    <div class="empty"><strong>Não foi possível carregar o tráfego</strong>Tente novamente em instantes.</div>
+  }
+</section>

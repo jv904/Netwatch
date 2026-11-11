@@ -1,4 +1,4 @@
-import { DeviceType, PortState, RunStatus } from './models';
+import { CaptureStatus, DeviceType, PortState, RunStatus } from './models';
 
 export const DEVICE_TYPES: { value: DeviceType; label: string }[] = [
   { value: 'UNKNOWN', label: 'Não definido' },
@@ -61,4 +61,42 @@ export function formatDuration(ms: number | null | undefined): string {
 
 export function formatNumber(value: number | null | undefined): string {
   return value === null || value === undefined ? '—' : value.toLocaleString('pt-BR');
+}
+
+export const CAPTURE_STATUS_LABEL: Record<CaptureStatus, string> = {
+  RUNNING: 'Capturando',
+  COMPLETED: 'Concluída',
+  STOPPED: 'Parada',
+  FAILED: 'Falhou',
+};
+
+const BYTE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB'];
+
+/** 1536 → "1,5 KB" (base 1024). */
+export function formatBytes(bytes: number | null | undefined): string {
+  if (bytes === null || bytes === undefined) return '—';
+  let value = bytes;
+  let unit = 0;
+  while (value >= 1024 && unit < BYTE_UNITS.length - 1) {
+    value /= 1024;
+    unit++;
+  }
+  const digits = unit === 0 || value >= 100 ? 0 : 1;
+  return `${value.toLocaleString('pt-BR', { maximumFractionDigits: digits })} ${BYTE_UNITS[unit]}`;
+}
+
+/** Maior unidade em que {@code max} fica ≥ 1 (para escalar um gráfico inteiro). */
+export function byteScale(max: number): { unit: string; divisor: number } {
+  let unit = 0;
+  let divisor = 1;
+  while (max / divisor >= 1024 && unit < BYTE_UNITS.length - 1) {
+    divisor *= 1024;
+    unit++;
+  }
+  return { unit: BYTE_UNITS[unit], divisor };
+}
+
+/** "192.168.0.10:443" ou só o IP quando não há porta. */
+export function endpoint(ip: string, port: number | null | undefined): string {
+  return port === null || port === undefined ? ip : `${ip}:${port}`;
 }

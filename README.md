@@ -1,7 +1,7 @@
 # NetWatch
 
 Plataforma de monitoramento e análise de segurança de redes. Ela reúne em um só lugar os dispositivos
-conectados à rede, os serviços que eles expõem e, nas próximas fases, o tráfego observado, as
+conectados à rede, os serviços que eles expõem, o tráfego observado e, nas próximas fases, as
 atividades suspeitas e os alertas.
 
 > O NetWatch é uma ferramenta de **observação**, não um antivírus nem um firewall.
@@ -42,6 +42,7 @@ Detalhes de cada parte (rotas da API, configurações e telas) estão nos README
 - **Dispositivos**: inventário com IP, MAC, fabricante, nome e situação, e marcação como conhecido ou desconhecido.
 - **Descoberta**: varredura das redes privadas autorizadas (ping, TCP e tabela ARP) sem exigir privilégios de administrador.
 - **Portas e serviços**: verificação de portas comuns ou específicas, com histórico e detecção de portas que passaram a aceitar conexões.
+- **Tráfego**: conexões desta máquina pela tabela do sistema, sem instalar nada (programa, serviço, destino e vizinhos da rede), ou captura de pacotes com volume e protocolos se o Npcap/libpcap estiver instalado. Sempre restrito às redes autorizadas e só com metadados.
 
 ## Roadmap
 
@@ -49,11 +50,11 @@ Detalhes de cada parte (rotas da API, configurações e telas) estão nos README
 - [x] 2. Cadastro e gerenciamento de dispositivos
 - [x] 3. Descoberta de dispositivos
 - [x] 4. Verificação de portas
-- [ ] 5. Captura de pacotes
+- [x] 5. Captura de pacotes
 - [ ] 6. Análise de atividades e histórico de eventos
 - [ ] 7. Motor de segurança
 - [ ] 8. Gerenciamento de alertas
-- [x] 9. Interface Angular (parcial: telas das fases 1 a 4; cada fase nova entra com a sua tela)
+- [x] 9. Interface Angular (parcial: telas das fases 1 a 5; cada fase nova entra com a sua tela)
 - [ ] 10. Relatórios
 - [ ] 11. Configurações
 - [ ] 12. Testes e documentação finais

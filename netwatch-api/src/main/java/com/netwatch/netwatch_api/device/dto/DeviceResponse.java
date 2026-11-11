@@ -44,7 +44,7 @@ public record DeviceResponse(
     }
 
     /** Nome amigável: nome do usuário > hostname > "Dispositivo desconhecido". */
-    private static String displayName(Device d) {
+    public static String displayName(Device d) {
         if (d.getCustomName() != null && !d.getCustomName().isBlank()) {
             return d.getCustomName();
         }

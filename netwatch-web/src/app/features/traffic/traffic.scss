@@ -1,0 +1,88 @@
+.section {
+  margin-top: 16px;
+}
+
+.error-banner {
+  background: var(--critical-soft);
+  border-color: rgba(208, 59, 59, 0.4);
+  align-items: flex-start;
+}
+
+.warn-banner {
+  background: var(--warning-soft);
+  border-color: rgba(250, 178, 25, 0.4);
+  align-items: flex-start;
+
+  app-icon {
+    color: var(--warning);
+  }
+}
+
+.steps {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-secondary);
+}
+
+.live {
+  min-width: 0;
+}
+
+.protocols {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+
+  .chip {
+    gap: 6px;
+  }
+}
+
+.field-gap {
+  margin-top: 12px;
+}
+
+.actions {
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.notes {
+  margin: 16px 0 0;
+  padding: 12px 0 0 18px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.pad {
+  padding-left: 18px;
+  padding-right: 18px;
+}
+
+.filters.pad {
+  margin-bottom: 14px;
+
+  .select {
+    flex: 0 0 auto;
+  }
+
+  .port {
+    flex: 0 0 110px;
+  }
+}
+
+.link {
+  color: var(--accent);
+}
+
+a.cell-main {
+  display: block;
+}

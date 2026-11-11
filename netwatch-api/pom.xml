@@ -62,6 +62,14 @@
 			<artifactId>flyway-database-postgresql</artifactId>
 		</dependency>
 
+		<!-- Captura de pacotes (Fase 5). Requer o driver Npcap (Windows) ou libpcap (Linux/macOS) em tempo de execução;
+		     sem ele a API sobe normalmente e a captura fica indisponível. -->
+		<dependency>
+			<groupId>org.pcap4j</groupId>
+			<artifactId>pcap4j-core</artifactId>
+			<version>1.8.2</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>

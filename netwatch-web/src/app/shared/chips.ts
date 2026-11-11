@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
-import { PORT_STATE_LABEL, RUN_STATUS_LABEL } from '../core/format';
-import { Device, PortState, RunStatus } from '../core/models';
+import { CAPTURE_STATUS_LABEL, PORT_STATE_LABEL, RUN_STATUS_LABEL } from '../core/format';
+import { CaptureStatus, Device, PortState, RunStatus } from '../core/models';
 
 /**
  * Situação do dispositivo, como no manual: Ativo / Inativo / Atenção (não reconhecido).
@@ -31,6 +31,28 @@ export class PortStateChip {
   readonly state = input.required<PortState>();
   protected readonly label = computed(() => PORT_STATE_LABEL[this.state()]);
   protected readonly tone = computed(() => (this.state() === 'OPEN' ? 'info' : ''));
+}
+
+@Component({
+  selector: 'app-capture-status',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `<span class="chip" [class]="tone()">{{ label() }}</span>`,
+})
+export class CaptureStatusChip {
+  readonly status = input.required<CaptureStatus>();
+  protected readonly label = computed(() => CAPTURE_STATUS_LABEL[this.status()]);
+  protected readonly tone = computed(() => {
+    switch (this.status()) {
+      case 'COMPLETED':
+        return 'good';
+      case 'STOPPED':
+        return 'neutral';
+      case 'FAILED':
+        return 'critical';
+      default:
+        return 'info';
+    }
+  });
 }
 
 @Component({

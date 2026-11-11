@@ -45,6 +45,21 @@ netwatch:
     schedule:
       enabled: ${NETWATCH_DISCOVERY_SCHEDULE_ENABLED:false}
       interval: 15m
+  capture:
+    # Observação de tráfego (Fase 5). Restrita às redes de netwatch.discovery.authorized-networks; só metadados.
+    # mode: auto = captura de pacotes se o Npcap/libpcap estiver instalado; senão, tabela de conexões
+    # do sistema (sem driver: só as conexões desta máquina, sem volume). Também aceita packets ou connections.
+    enabled: ${NETWATCH_CAPTURE_ENABLED:true}
+    mode: ${NETWATCH_CAPTURE_MODE:auto}
+    connection-poll-interval: 5s
+    default-interface: ${NETWATCH_CAPTURE_INTERFACE:}
+    snaplen: 128
+    promiscuous: false
+    flush-interval: 10s
+    flow-timeout: 2m
+    default-duration: 1h
+    max-duration: 8h
+    retention-days: 7
   ports:
     timeout: 1500ms
     concurrency: 100

@@ -26,6 +26,7 @@ com.netwatch.netwatch_api
 ├── device/       inventário de dispositivos (Fase 2)
 ├── discovery/    descoberta automática na rede autorizada (Fase 3)
 ├── ports/        verificação de portas e serviços (Fase 4)
+├── traffic/      captura de pacotes: sessões, fluxos e estatísticas (Fase 5)
 └── dashboard/    visão geral para a tela inicial
 ```
 
@@ -93,6 +94,56 @@ inventário que estejam em redes autorizadas; uma verificação por dispositivo 
 estava fechada e passou a aceitar conexões é marcada `newlyOpened` — base da regra "serviço inesperado"
 do motor de segurança.
 
+## API — Tráfego
+
+O tráfego tem duas fontes possíveis, escolhidas automaticamente (`netwatch.capture.mode=auto`):
+
+| Modo | Quando | O que mostra |
+|---|---|---|
+| `PACKETS` | Npcap (Windows) ou libpcap instalado | Pacotes, volume, broadcast/multicast da rede e conexões desta máquina |
+| `CONNECTIONS` | Sem driver (padrão nesta instalação) | Conexões TCP/UDP desta máquina pela tabela do sistema (`netstat`): com quem conversa, portas, serviço, estado e programa. Sem volume nem pacotes |
+
+No modo `CONNECTIONS` nada precisa ser instalado e não é preciso ser administrador. A tabela é lida a
+cada `connection-poll-interval` (5 s). Conexões em LISTENING e de loopback ficam de fora, e a direção do
+fluxo é deduzida das portas em escuta (entrada = alguém acessando um serviço desta máquina). Vizinhos da
+sub-rede local que conversam com a máquina são identificados pelo MAC na tabela ARP e entram no inventário.
+O gráfico mostra o pico de conexões simultâneas, e os rankings usam o número de fluxos.
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/api/capture/status` | `mode` em uso, fontes disponíveis, motivo/limitação, redes filtradas, sessão em andamento e última |
+| GET | `/api/capture/interfaces` | Placas de rede para captura de pacotes (vazio no modo conexões); `eligible` = tem endereço em rede autorizada |
+| POST | `/api/capture/sessions` | Inicia uma sessão: `{"interfaceName":"...","durationMinutes":60}` (ambos opcionais) → 202. 409 se já houver uma; 503 sem nenhuma fonte |
+| POST | `/api/capture/sessions/{id}/stop` | Para a captura (termina em até meio segundo) |
+| GET | `/api/capture/sessions` | Histórico de sessões |
+| GET | `/api/capture/sessions/{id}` | Uma sessão |
+| GET | `/api/traffic/flows` | Fluxos. Filtros: `ip` (origem ou destino), `deviceId`, `protocol`, `port`, `window` (1h/24h/7d) |
+| GET | `/api/traffic/summary?window=1h` | Totais, série temporal, protocolos, hosts e serviços com mais tráfego |
+| GET | `/api/devices/{id}/traffic?window=24h` | Enviado/recebido, com quem mais conversou e fluxos recentes |
+
+**Captura de pacotes (opcional).** Usa o pcap4j e precisa do driver **Npcap** no Windows
+([npcap.com](https://npcap.com/#download); o uso corporativo pode exigir a licença OEM) ou da **libpcap**
+no Linux/macOS. Com o driver instalado, o modo `auto` passa a usá-lo sem outra configuração. A captura
+costuma exigir que a API rode como administrador (ou, no Npcap, que ele tenha sido instalado sem a opção
+"restrict to administrators").
+
+**Privacidade e escopo (modo pacotes).**
+- Só os primeiros 128 bytes de cada pacote (`snaplen`) chegam à aplicação: Ethernet, IPv4, TCP/UDP e ARP.
+  O conteúdo nunca é lido nem gravado.
+- O filtro BPF montado a partir de `netwatch.discovery.authorized-networks` (ex.: `net 192.168.100.0/24`)
+  roda no driver. A aplicação confere de novo e descarta o que não tem origem nem destino em rede autorizada.
+- Os pacotes são agregados em **fluxos** (protocolo + IP/porta de origem e destino) e em totais por minuto,
+  gravados a cada 10 s e apagados após `retention-days` (7).
+- Os equipamentos da sub-rede local vistos no tráfego passam por `registerObservation`, como na descoberta.
+
+**Limitação.** Numa rede com switch, uma máquina só vê o próprio tráfego e o de broadcast/multicast
+(ARP, DHCP, mDNS, SSDP). Para observar a rede inteira é preciso espelhamento de porta (SPAN) no switch.
+
+Configurações em `netwatch.capture.*`: `enabled` (`NETWATCH_CAPTURE_ENABLED`, padrão `true`),
+`mode` (`NETWATCH_CAPTURE_MODE`: `auto`, `packets` ou `connections`), `connection-poll-interval`,
+`default-interface` (`NETWATCH_CAPTURE_INTERFACE`), `snaplen`, `promiscuous`, `flush-interval`, `flow-timeout`,
+`default-duration`, `max-duration`, `retention-days`.
+
 ## API — Dashboard
 
 `GET /api/dashboard/overview` — indicadores de dispositivos, portas abertas, última descoberta,
@@ -108,8 +159,8 @@ A interface Angular fica em [`../netwatch-web`](../netwatch-web).
 - [x] Fase 2 — Cadastro e gerenciamento de dispositivos
 - [x] Fase 3 — Descoberta de dispositivos
 - [x] Fase 4 — Verificação de portas
-- [x] Fase 9 (parcial) — Interface Angular para as fases 1–4 (cada fase nova já entra com sua tela)
-- [ ] Fase 5 — Captura de pacotes
+- [x] Fase 9 (parcial) — Interface Angular para as fases 1–5 (cada fase nova já entra com sua tela)
+- [x] Fase 5 — Tráfego: tabela de conexões (sem driver) ou captura de pacotes (Npcap/libpcap)
 - [ ] Fase 6 — Análise de atividades / histórico de eventos
 - [ ] Fase 7 — Motor de segurança
 - [ ] Fase 8 — Alertas

@@ -39,6 +39,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return problem(HttpStatus.BAD_REQUEST, "Dados inválidos", ex.getMessage());
     }
 
+    @ExceptionHandler(ServiceUnavailableException.class)
+    ProblemDetail handleUnavailable(ServiceUnavailableException ex) {
+        return problem(HttpStatus.SERVICE_UNAVAILABLE, "Recurso indisponível", ex.getMessage());
+    }
+
     @ExceptionHandler(PropertyReferenceException.class)
     ProblemDetail handleInvalidSort(PropertyReferenceException ex) {
         return problem(HttpStatus.BAD_REQUEST, "Parâmetro de ordenação inválido",

@@ -20,6 +20,9 @@ public interface DeviceRepository extends JpaRepository<Device, UUID>, JpaSpecif
 
     boolean existsByIpAddressAndMacAddressIsNull(String ipAddress);
 
+    /** Equipamento visto mais recentemente com este IP (usado para ligar o tráfego ao inventário). */
+    Optional<Device> findFirstByIpAddressOrderByLastSeenAtDesc(String ipAddress);
+
     long countByStatus(DeviceStatus status);
 
     long countByRecognizedFalse();

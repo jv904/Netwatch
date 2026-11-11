@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 
 import { describeError } from './error.interceptor';
-import { deviceTypeLabel, formatDuration, timeAgo } from './format';
+import { byteScale, deviceTypeLabel, endpoint, formatBytes, formatDuration, timeAgo } from './format';
 
 describe('format', () => {
   it('formata durações', () => {
@@ -38,5 +38,19 @@ describe('describeError', () => {
 
   it('explica quando a API está fora do ar', () => {
     expect(describeError(new HttpErrorResponse({ status: 0 }))).toContain('Não foi possível conectar à API');
+  });
+
+  it('formata volumes de dados', () => {
+    expect(formatBytes(null)).toBe('—');
+    expect(formatBytes(512)).toBe('512 B');
+    expect(formatBytes(1536)).toBe('1,5 KB');
+    expect(formatBytes(250 * 1024 * 1024)).toBe('250 MB');
+    expect(byteScale(5 * 1024 * 1024)).toEqual({ unit: 'MB', divisor: 1024 * 1024 });
+    expect(byteScale(10)).toEqual({ unit: 'B', divisor: 1 });
+  });
+
+  it('mostra IP e porta juntos', () => {
+    expect(endpoint('192.168.0.1', 443)).toBe('192.168.0.1:443');
+    expect(endpoint('192.168.0.1', null)).toBe('192.168.0.1');
   });
 });
