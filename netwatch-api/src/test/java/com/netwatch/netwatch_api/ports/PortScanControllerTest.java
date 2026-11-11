@@ -160,6 +160,13 @@ class PortScanControllerTest {
         mvc.perform(get("/api/devices/{id}/port-scans", device.getId()))
                 .andExpect(jsonPath("$.totalElements").value(2))
                 .andExpect(jsonPath("$.content[0].requestedPorts").value("3389"));
+
+        // A porta que passou a aceitar conexões vira evento importante no histórico do dispositivo.
+        mvc.perform(get("/api/devices/{id}/events", device.getId()))
+                .andExpect(jsonPath("$.content[?(@.type == 'PORT_OPENED')].severity").value(org.hamcrest.Matchers.hasItem("WARNING")))
+                .andExpect(jsonPath("$.content[?(@.type == 'PORT_OPENED')].title")
+                        .value(org.hamcrest.Matchers.hasItem("Porta 3389 (RDP (Área de Trabalho Remota)) passou a aceitar conexões em 192.168.50.10")))
+                .andExpect(jsonPath("$.content[?(@.type == 'PORT_SCAN_COMPLETED')]").isNotEmpty());
     }
 
     @Test

@@ -5,17 +5,18 @@ import { catchError, of, switchMap, timer } from 'rxjs';
 
 import { Api } from '../../core/api';
 import { formatDateTime, formatDuration, formatNumber, timeAgo } from '../../core/format';
-import { DashboardOverview, Device } from '../../core/models';
+import { DashboardOverview, Device, NetworkEvent } from '../../core/models';
 import { ToastService } from '../../core/toast';
 import { AreaChart, AreaPoint } from '../../shared/area-chart';
 import { BarChart, BarItem } from '../../shared/bar-chart';
 import { RunStatusChip } from '../../shared/chips';
+import { EventList } from '../../shared/event-list';
 import { Icon } from '../../shared/icon';
 import { KpiCard } from '../../shared/kpi-card';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [KpiCard, AreaChart, BarChart, RunStatusChip, Icon, RouterLink],
+  imports: [KpiCard, AreaChart, BarChart, EventList, RunStatusChip, Icon, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
@@ -28,6 +29,7 @@ export class Dashboard {
   protected readonly overview = signal<DashboardOverview | null>(null);
   protected readonly unknown = signal<Device[] | null>(null);
   protected readonly unknownTotal = signal(0);
+  protected readonly recentEvents = signal<NetworkEvent[] | null>(null);
   protected readonly loadError = signal(false);
 
   protected readonly timeAgo = timeAgo;
@@ -44,6 +46,14 @@ export class Dashboard {
       .subscribe((o) => {
         this.loadError.set(o === null && this.overview() === null);
         if (o) this.overview.set(o);
+      });
+    timer(0, 30_000)
+      .pipe(
+        switchMap(() => this.api.events({ size: 6 }).pipe(catchError(() => of(null)))),
+        takeUntilDestroyed(),
+      )
+      .subscribe((page) => {
+        if (page) this.recentEvents.set(page.content);
       });
     this.loadUnknown();
   }

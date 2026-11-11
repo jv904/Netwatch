@@ -10,9 +10,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.netwatch.netwatch_api.activity.ActivityEvent;
+import com.netwatch.netwatch_api.activity.EventType;
 import com.netwatch.netwatch_api.device.Device;
 import com.netwatch.netwatch_api.device.DeviceObservation;
 import com.netwatch.netwatch_api.device.DeviceRepository;
@@ -43,10 +46,11 @@ class TrafficRecorder {
     private final DeviceService deviceService;
     private final MacVendorLookup vendors;
     private final CaptureProperties properties;
+    private final ApplicationEventPublisher events;
 
     TrafficRecorder(TrafficFlowRepository flows, TrafficMinuteStatRepository stats, CaptureSessionRepository sessions,
             DeviceRepository devices, DeviceService deviceService, MacVendorLookup vendors,
-            CaptureProperties properties) {
+            CaptureProperties properties, ApplicationEventPublisher events) {
         this.flows = flows;
         this.stats = stats;
         this.sessions = sessions;
@@ -54,6 +58,7 @@ class TrafficRecorder {
         this.deviceService = deviceService;
         this.vendors = vendors;
         this.properties = properties;
+        this.events = events;
     }
 
     /** Estado de uma sessão de captura entre uma gravação e outra. */
@@ -63,6 +68,8 @@ class TrafficRecorder {
         final Ipv4Network localSubnet;
         final Map<FlowKey, ActiveFlow> activeFlows = new HashMap<>();
         final Map<String, Instant> lastObservation = new ConcurrentHashMap<>();
+        /** Serviços (dispositivo|protocolo|porta) já conferidos nesta sessão. */
+        final java.util.Set<String> knownServices = new java.util.HashSet<>();
         int newDevices;
 
         SessionState(UUID sessionId, Ipv4Network localSubnet) {
@@ -81,7 +88,8 @@ class TrafficRecorder {
         for (FlowDelta delta : drain.flows()) {
             FlowKey key = delta.key();
             TrafficFlow flow = continuing(state, delta);
-            if (flow == null) {
+            boolean isNew = flow == null;
+            if (isNew) {
                 flow = new TrafficFlow(state.sessionId, key.protocol(), key.srcIp(), key.srcPort(), key.dstIp(),
                         key.dstPort(), delta.firstSeen());
             }
@@ -91,6 +99,9 @@ class TrafficRecorder {
             flow.linkDevices(
                     deviceFor(state, key.srcIp(), delta.srcMac(), deviceCache),
                     deviceFor(state, key.dstIp(), delta.dstMac(), deviceCache));
+            if (isNew) {
+                detectNewService(state, flow);
+            }
             flow = flows.save(flow);
             state.activeFlows.put(key, new ActiveFlow(flow.getId(), flow.getLastSeen()));
         }
@@ -105,6 +116,35 @@ class TrafficRecorder {
 
         sessions.findById(state.sessionId).ifPresent(s -> s.updateCounters(packets, bytes, state.newDevices));
         expireIdleFlows(state, drain);
+    }
+
+    /**
+     * Primeira vez que um dispositivo do inventário aparece oferecendo um serviço (o destino do fluxo é a porta
+     * do serviço): vira evento no histórico. Base da regra "serviço inesperado" do motor de segurança.
+     */
+    private void detectNewService(SessionState state, TrafficFlow flow) {
+        UUID deviceId = flow.getDstDeviceId();
+        Integer port = flow.getServicePort();
+        if (deviceId == null || port == null || !port.equals(flow.getDstPort())) {
+            return;
+        }
+        String key = deviceId + "|" + flow.getProtocol() + "|" + port;
+        if (!state.knownServices.add(key)
+                || flows.existsByDstDeviceIdAndProtocolAndServicePort(deviceId, flow.getProtocol(), port)) {
+            return;
+        }
+        String service = TrafficServices.nameOf(flow.getProtocol(), port);
+        String what = port + "/" + flow.getProtocol().name().toLowerCase() + (service != null ? " (" + service + ")" : "");
+        String target = devices.findById(deviceId).map(TrafficRecorder::label).orElse(flow.getDstIp());
+        events.publishEvent(ActivityEvent.of(EventType.TRAFFIC_NEW_SERVICE, deviceId, flow.getDstIp(),
+                        "Serviço " + what + " em uso em " + target)
+                .withDetails("Primeiro acesso visto no tráfego, vindo de " + flow.getSrcIp())
+                .withReference(state.sessionId));
+    }
+
+    private static String label(Device device) {
+        String name = device.getCustomName() != null ? device.getCustomName() : device.getHostname();
+        return name != null && !name.isBlank() ? name + " (" + device.getIpAddress() + ")" : device.getIpAddress();
     }
 
     /** O fluxo continua se o último pacote dele foi visto há menos que o tempo de inatividade. */
@@ -171,7 +211,8 @@ class TrafficRecorder {
         state.lastObservation.put(key, at);
         try {
             ObservationResult result = deviceService.registerObservation(
-                    new DeviceObservation(ip, mac, null, vendors.lookup(mac).orElse(null)));
+                    new DeviceObservation(ip, mac, null, vendors.lookup(mac).orElse(null),
+                            DeviceObservation.Source.TRAFFIC));
             if (result.created()) {
                 state.newDevices++;
                 log.info("Novo dispositivo visto no tráfego: {} ({})", ip, mac);

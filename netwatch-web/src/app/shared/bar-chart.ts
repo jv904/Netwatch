@@ -7,6 +7,8 @@ export interface BarItem {
   hint?: string;
   /** Dado livre do chamador (ex.: número da porta). */
   port?: number;
+  /** Dado livre do chamador (ex.: tipo de evento). */
+  type?: string;
 }
 
 /**

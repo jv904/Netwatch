@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +21,8 @@ import org.springframework.stereotype.Service;
 import com.netwatch.netwatch_api.common.exception.ConflictException;
 import com.netwatch.netwatch_api.common.exception.ResourceNotFoundException;
 import com.netwatch.netwatch_api.device.DeviceObservation;
+import com.netwatch.netwatch_api.activity.ActivityEvent;
+import com.netwatch.netwatch_api.activity.EventType;
 import com.netwatch.netwatch_api.device.DeviceService;
 import com.netwatch.netwatch_api.discovery.AuthorizedNetworks.AuthorizedNetwork;
 import com.netwatch.netwatch_api.discovery.NetworkScanner.ScanResult;
@@ -37,6 +40,7 @@ public class DiscoveryService implements DisposableBean {
     private final NetworkScanner scanner;
     private final AuthorizedNetworks authorizedNetworks;
     private final DeviceService deviceService;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
 
     private final AtomicBoolean running = new AtomicBoolean(false);
@@ -44,12 +48,25 @@ public class DiscoveryService implements DisposableBean {
             Thread.ofPlatform().name("netwatch-discovery").daemon(true).factory());
 
     public DiscoveryService(DiscoveryRunRepository runs, NetworkScanner scanner,
-            AuthorizedNetworks authorizedNetworks, DeviceService deviceService, Clock clock) {
+            AuthorizedNetworks authorizedNetworks, DeviceService deviceService, ApplicationEventPublisher events,
+            Clock clock) {
         this.runs = runs;
         this.scanner = scanner;
         this.authorizedNetworks = authorizedNetworks;
         this.deviceService = deviceService;
+        this.events = events;
         this.clock = clock;
+    }
+
+    private void publishOutcome(DiscoveryRun run) {
+        ActivityEvent event = run.getStatus() == DiscoveryRunStatus.COMPLETED
+                ? ActivityEvent.of(EventType.DISCOVERY_COMPLETED, null, null,
+                        "Descoberta em " + run.getCidr() + " concluída: " + run.getDevicesFound() + " dispositivos")
+                        .withDetails(run.getNewDevices() + " novos, " + run.getInactivated() + " inativados")
+                : ActivityEvent.of(EventType.DISCOVERY_FAILED, null, null,
+                        "Descoberta em " + run.getCidr() + " falhou")
+                        .withDetails(run.getErrorMessage());
+        events.publishEvent(event.withReference(run.getId()));
     }
 
     public List<AuthorizedNetwork> authorizedNetworks() {
@@ -127,6 +144,9 @@ public class DiscoveryService implements DisposableBean {
         } finally {
             try {
                 runs.save(run);
+                publishOutcome(run);
+            } catch (RuntimeException e) {
+                log.warn("Não foi possível registrar o fim da descoberta: {}", e.getMessage());
             } finally {
                 running.set(false);
             }

@@ -26,7 +26,8 @@ com.netwatch.netwatch_api
 ├── device/       inventário de dispositivos (Fase 2)
 ├── discovery/    descoberta automática na rede autorizada (Fase 3)
 ├── ports/        verificação de portas e serviços (Fase 4)
-├── traffic/      captura de pacotes: sessões, fluxos e estatísticas (Fase 5)
+├── traffic/      tráfego: sessões, fluxos e estatísticas (Fase 5)
+├── activity/     histórico de eventos e análise de atividades (Fase 6)
 └── dashboard/    visão geral para a tela inicial
 ```
 
@@ -100,8 +101,8 @@ O tráfego tem duas fontes possíveis, escolhidas automaticamente (`netwatch.cap
 
 | Modo | Quando | O que mostra |
 |---|---|---|
-| `PACKETS` | Npcap (Windows) ou libpcap instalado | Pacotes, volume, broadcast/multicast da rede e conexões desta máquina |
-| `CONNECTIONS` | Sem driver (padrão nesta instalação) | Conexões TCP/UDP desta máquina pela tabela do sistema (`netstat`): com quem conversa, portas, serviço, estado e programa. Sem volume nem pacotes |
+| `PACKETS` | Npcap (Windows) ou libpcap instalado — funcionamento pretendido | Pacotes, volume, broadcast/multicast da rede e conexões desta máquina |
+| `CONNECTIONS` | Sem driver — modo limitado, alternativa provisória | Conexões TCP/UDP desta máquina pela tabela do sistema (`netstat`): com quem conversa, portas, serviço, estado e programa. Sem volume nem pacotes |
 
 No modo `CONNECTIONS` nada precisa ser instalado e não é preciso ser administrador. A tabela é lida a
 cada `connection-poll-interval` (5 s). Conexões em LISTENING e de loopback ficam de fora, e a direção do
@@ -121,7 +122,7 @@ O gráfico mostra o pico de conexões simultâneas, e os rankings usam o número
 | GET | `/api/traffic/summary?window=1h` | Totais, série temporal, protocolos, hosts e serviços com mais tráfego |
 | GET | `/api/devices/{id}/traffic?window=24h` | Enviado/recebido, com quem mais conversou e fluxos recentes |
 
-**Captura de pacotes (opcional).** Usa o pcap4j e precisa do driver **Npcap** no Windows
+**Captura de pacotes (recomendada; necessária para o monitoramento completo).** Veja [docs/npcap.md](../docs/npcap.md). Usa o pcap4j e precisa do driver **Npcap** no Windows
 ([npcap.com](https://npcap.com/#download); o uso corporativo pode exigir a licença OEM) ou da **libpcap**
 no Linux/macOS. Com o driver instalado, o modo `auto` passa a usá-lo sem outra configuração. A captura
 costuma exigir que a API rode como administrador (ou, no Npcap, que ele tenha sido instalado sem a opção
@@ -144,6 +145,26 @@ Configurações em `netwatch.capture.*`: `enabled` (`NETWATCH_CAPTURE_ENABLED`, 
 `default-interface` (`NETWATCH_CAPTURE_INTERFACE`), `snaplen`, `promiscuous`, `flush-interval`, `flow-timeout`,
 `default-duration`, `max-duration`, `retention-days`.
 
+## API — Atividades (histórico de eventos)
+
+Os módulos publicam eventos (`ActivityEvent`) que são gravados no histórico (`network_events`) na mesma
+transação da operação. Eles são a base do motor de segurança e dos alertas das próximas fases.
+
+| Categoria | Eventos (importância) |
+|---|---|
+| Dispositivos | novo dispositivo (**importante**), IP alterado (atenção), voltou a aparecer, ficou inativo, cadastro manual, marcado como conhecido/desconhecido (atenção), removido |
+| Portas | porta passou a aceitar conexões (**importante**), deixou de aceitar (atenção), verificação concluída, falha (atenção) |
+| Descoberta | concluída, falha (atenção) |
+| Tráfego | captura iniciada/encerrada, falha (atenção), serviço visto pela primeira vez em um dispositivo da rede (atenção) |
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/api/events` | Histórico paginado. Filtros: `type`, `category`, `severity`, `deviceId`, `q` (título, detalhes, IP), `window` (24h/7d/30d) |
+| GET | `/api/events/summary?window=7d` | Totais por importância, linha do tempo, eventos por tipo, distribuição por hora do dia e dispositivos mais ativos |
+| GET | `/api/devices/{id}/events` | Histórico de um dispositivo |
+
+Eventos de dispositivos removidos continuam no histórico (sem o vínculo). Retenção: `netwatch.activity.retention-days` (90).
+
 ## API — Dashboard
 
 `GET /api/dashboard/overview` — indicadores de dispositivos, portas abertas, última descoberta,
@@ -159,9 +180,9 @@ A interface Angular fica em [`../netwatch-web`](../netwatch-web).
 - [x] Fase 2 — Cadastro e gerenciamento de dispositivos
 - [x] Fase 3 — Descoberta de dispositivos
 - [x] Fase 4 — Verificação de portas
-- [x] Fase 9 (parcial) — Interface Angular para as fases 1–5 (cada fase nova já entra com sua tela)
+- [x] Fase 9 (parcial) — Interface Angular para as fases 1–6 (cada fase nova já entra com sua tela)
 - [x] Fase 5 — Tráfego: tabela de conexões (sem driver) ou captura de pacotes (Npcap/libpcap)
-- [ ] Fase 6 — Análise de atividades / histórico de eventos
+- [x] Fase 6 — Análise de atividades / histórico de eventos
 - [ ] Fase 7 — Motor de segurança
 - [ ] Fase 8 — Alertas
 - [ ] Fase 10 — Relatórios

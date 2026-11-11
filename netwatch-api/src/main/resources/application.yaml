@@ -60,6 +60,9 @@ netwatch:
     default-duration: 1h
     max-duration: 8h
     retention-days: 7
+  activity:
+    # Dias que os eventos ficam no histórico de atividades (Fase 6).
+    retention-days: 90
   ports:
     timeout: 1500ms
     concurrency: 100

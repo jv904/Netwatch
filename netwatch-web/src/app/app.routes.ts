@@ -32,5 +32,10 @@ export const routes: Routes = [
     title: 'Tráfego · NetWatch',
     loadComponent: () => import('./features/traffic/traffic').then((m) => m.Traffic),
   },
+  {
+    path: 'activity',
+    title: 'Atividades · NetWatch',
+    loadComponent: () => import('./features/activity/activity').then((m) => m.Activity),
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];

@@ -1,0 +1,173 @@
+<div class="page-header">
+  <div>
+    <h1>Atividades da rede</h1>
+    <p>Histórico do que mudou na rede: equipamentos novos ou ausentes, portas, descobertas e tráfego.</p>
+  </div>
+  <span class="spacer"></span>
+  <div class="segmented" role="radiogroup" aria-label="Período">
+    @for (w of windows; track w.value) {
+      <button type="button" role="radio" [class.active]="window() === w.value" [attr.aria-checked]="window() === w.value" (click)="setWindow(w.value)">
+        {{ w.label }}
+      </button>
+    }
+  </div>
+</div>
+
+@if (loadError()) {
+  <div class="banner error-banner">
+    <app-icon name="alert" />
+    <span>Não foi possível carregar as atividades. Verifique se a NetWatch API está em execução.</span>
+  </div>
+}
+
+<section class="grid grid-kpi">
+  <app-kpi-card label="Eventos" icon="activity" [value]="summary()?.totals?.total ?? null" caption="Registrados no período" />
+  <app-kpi-card
+    label="Importantes"
+    icon="alert"
+    tone="warning"
+    [value]="summary()?.totals?.warnings ?? null"
+    caption="Mudanças relevantes para a segurança"
+  />
+  <app-kpi-card label="Novos dispositivos" icon="devices" tone="info" [value]="summary()?.totals?.newDevices ?? null" caption="Vistos pela primeira vez" />
+  <app-kpi-card
+    label="Portas e serviços novos"
+    icon="ports"
+    [value]="summary() ? summary()!.totals.portsOpened + summary()!.totals.newServices : null"
+    [caption]="summary() ? summary()!.totals.portsOpened + ' portas abertas, ' + summary()!.totals.newServices + ' serviços no tráfego' : ''"
+  />
+</section>
+
+<div class="grid grid-2 section">
+  <section class="card">
+    <div class="card-header">
+      <h2><app-icon name="activity" [size]="16" /> Eventos ao longo do tempo</h2>
+    </div>
+    @if (summary()) {
+      <app-area-chart
+        [points]="timeline()"
+        [height]="230"
+        unit="eventos"
+        ariaLabel="Quantidade de eventos ao longo do período"
+        emptyText="Nenhum evento no período. Rode uma descoberta, verificação de portas ou observação de tráfego."
+      />
+    } @else {
+      <div class="skeleton" style="height: 230px"></div>
+    }
+  </section>
+
+  <section class="card">
+    <div class="card-header">
+      <h2><app-icon name="report" [size]="16" /> Por tipo</h2>
+      <span class="hint">clique para filtrar</span>
+    </div>
+    @if (summary()) {
+      <app-bar-chart
+        [items]="typeBars()"
+        unit="eventos"
+        ariaLabel="Eventos por tipo"
+        emptyText="Nenhum evento no período."
+        [interactive]="true"
+        (itemSelect)="filterByType($event)"
+      />
+    } @else {
+      <div class="skeleton" style="height: 200px"></div>
+    }
+  </section>
+</div>
+
+<div class="grid grid-2 section">
+  <section class="card">
+    <div class="card-header">
+      <h2><app-icon name="clock" [size]="16" /> Horário das atividades</h2>
+      @if (busiestHour(); as h) {
+        <span class="hint">mais movimentado: {{ h }}</span>
+      }
+    </div>
+    @if (summary(); as s) {
+      @if (s.totals.total > 0) {
+        <div class="hours" role="img" [attr.aria-label]="'Eventos por hora do dia, fuso ' + s.timeZone">
+          @for (h of hours(); track h.hour) {
+            <div class="hour" [title]="h.label + ': ' + h.count + ' eventos'">
+              <span class="hour-bar" [style.height.%]="h.height" [class.zero]="h.count === 0"></span>
+              @if (h.hour % 3 === 0) {
+                <span class="hour-label">{{ h.label }}</span>
+              }
+            </div>
+          }
+        </div>
+        <p class="muted small">Eventos por hora do dia ({{ s.timeZone }}). Atividade fora do expediente pode merecer atenção.</p>
+      } @else {
+        <div class="empty">Nenhum evento no período.</div>
+      }
+    } @else {
+      <div class="skeleton" style="height: 160px"></div>
+    }
+  </section>
+
+  <section class="card">
+    <div class="card-header">
+      <h2><app-icon name="devices" [size]="16" /> Dispositivos mais ativos</h2>
+    </div>
+    @if (summary(); as s) {
+      @if (s.topDevices.length) {
+        <ul class="top-devices">
+          @for (d of s.topDevices; track d.deviceId) {
+            <li>
+              <a class="link" [routerLink]="['/devices', d.deviceId]">{{ d.name }}</a>
+              <span class="mono muted">{{ d.ipAddress }}</span>
+              <span class="spacer"></span>
+              @if (d.warnings > 0) {
+                <span class="chip warning">{{ d.warnings }} importantes</span>
+              }
+              <span class="nums">{{ d.count }} eventos</span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <div class="empty">Nenhum dispositivo com eventos no período.</div>
+      }
+    } @else {
+      <div class="skeleton" style="height: 160px"></div>
+    }
+  </section>
+</div>
+
+<section class="card section" id="eventos">
+  <div class="card-header">
+    <h2><app-icon name="clock" [size]="16" /> Histórico</h2>
+    @if (events(); as p) {
+      <span class="hint">{{ p.totalElements.toLocaleString('pt-BR') }} eventos</span>
+    }
+  </div>
+  <div class="filters">
+    <div class="segmented" role="radiogroup" aria-label="Categoria">
+      @for (c of categories; track c.value) {
+        <button type="button" role="radio" [class.active]="category() === c.value && !type()" [attr.aria-checked]="category() === c.value" (click)="setCategory(c.value)">
+          {{ c.label }}
+        </button>
+      }
+    </div>
+    <select class="select" aria-label="Importância" [value]="severity()" (change)="setSeverity($any($event.target).value)">
+      <option value="">Qualquer importância</option>
+      @for (s of severities; track s) {
+        <option [value]="s" [selected]="s === severity()">{{ severityLabel[s] }}</option>
+      }
+    </select>
+    <input class="input" type="search" placeholder="Buscar por IP, dispositivo, porta…" aria-label="Buscar eventos" [value]="search()" (input)="setSearch($any($event.target).value)" />
+    @if (type(); as t) {
+      <button class="chip info chip-btn" type="button" (click)="type.set(''); page.set(0)" aria-label="Remover filtro de tipo">
+        {{ typeLabel[t] }} <app-icon name="x" [size]="12" />
+      </button>
+    }
+    @if (hasFilters()) {
+      <button class="btn btn-ghost btn-sm" type="button" (click)="clearFilters()">Limpar</button>
+    }
+  </div>
+  @if (events(); as p) {
+    <app-event-list [events]="p.content" emptyText="Nenhum evento encontrado com esses filtros." />
+    <app-paginator [page]="p.page" [size]="p.size" [total]="p.totalElements" (pageChange)="page.set($event)" />
+  } @else {
+    <div class="skeleton" style="height: 240px"></div>
+  }
+</section>

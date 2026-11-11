@@ -85,4 +85,21 @@ describe('Api', () => {
     api.deviceTraffic('d1').subscribe();
     expect(http.expectOne((r) => r.url === '/api/devices/d1/traffic').request.params.get('window')).toBe('24h');
   });
+
+  it('envia somente os filtros preenchidos no histórico de eventos', () => {
+    api.events({ severity: 'WARNING', category: '', type: '', q: ' 192.168.0.10 ', window: '7d', page: 0, size: 25 }).subscribe();
+
+    const req = http.expectOne((r) => r.url === '/api/events');
+    expect(req.request.params.get('severity')).toBe('WARNING');
+    expect(req.request.params.has('category')).toBe(false);
+    expect(req.request.params.has('type')).toBe(false);
+    expect(req.request.params.get('q')).toBe('192.168.0.10');
+    expect(req.request.params.get('window')).toBe('7d');
+
+    api.eventSummary('30d').subscribe();
+    expect(http.expectOne((r) => r.url === '/api/events/summary').request.params.get('window')).toBe('30d');
+
+    api.deviceEvents('d1', 2).subscribe();
+    expect(http.expectOne((r) => r.url === '/api/devices/d1/events').request.params.get('page')).toBe('2');
+  });
 });

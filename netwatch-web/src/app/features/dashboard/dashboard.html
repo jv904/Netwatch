@@ -145,10 +145,23 @@
   </div>
 </section>
 
+<section class="card section">
+  <div class="card-header">
+    <h2><app-icon name="activity" [size]="16" /> Atividades recentes</h2>
+    <span class="spacer"></span>
+    <a class="btn btn-sm" routerLink="/activity">Ver histórico</a>
+  </div>
+  @if (recentEvents(); as events) {
+    <app-event-list [events]="events" emptyText="Nenhuma atividade registrada ainda. Rode uma descoberta para começar." />
+  } @else {
+    <div class="skeleton" style="height: 160px"></div>
+  }
+</section>
+
 <section class="card coming section">
   <app-icon name="shield" />
   <div>
-    <strong>Alertas e monitoramento de tráfego</strong>
-    <p class="muted">Os indicadores de alertas ativos, eventos e volume de tráfego aparecerão aqui quando as próximas fases forem concluídas.</p>
+    <strong>Alertas</strong>
+    <p class="muted">Os alertas ativos aparecerão aqui quando o motor de segurança e o gerenciamento de alertas forem concluídos.</p>
   </div>
 </section>

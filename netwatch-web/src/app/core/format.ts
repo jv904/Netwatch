@@ -1,4 +1,4 @@
-import { CaptureStatus, DeviceType, PortState, RunStatus } from './models';
+import { CaptureStatus, DeviceType, EventCategory, EventSeverity, EventType, PortState, RunStatus } from './models';
 
 export const DEVICE_TYPES: { value: DeviceType; label: string }[] = [
   { value: 'UNKNOWN', label: 'Não definido' },
@@ -100,3 +100,37 @@ export function byteScale(max: number): { unit: string; divisor: number } {
 export function endpoint(ip: string, port: number | null | undefined): string {
   return port === null || port === undefined ? ip : `${ip}:${port}`;
 }
+
+export const EVENT_SEVERITY_LABEL: Record<EventSeverity, string> = {
+  INFO: 'Informativo',
+  NOTICE: 'Atenção',
+  WARNING: 'Importante',
+};
+
+export const EVENT_CATEGORY_LABEL: Record<EventCategory, string> = {
+  DEVICE: 'Dispositivos',
+  PORT: 'Portas',
+  DISCOVERY: 'Descoberta',
+  TRAFFIC: 'Tráfego',
+};
+
+export const EVENT_TYPE_LABEL: Record<EventType, string> = {
+  DEVICE_DISCOVERED: 'Novo dispositivo',
+  DEVICE_IP_CHANGED: 'IP alterado',
+  DEVICE_RETURNED: 'Voltou a aparecer',
+  DEVICE_INACTIVE: 'Ficou inativo',
+  DEVICE_CREATED: 'Cadastro manual',
+  DEVICE_RECOGNIZED: 'Marcado como conhecido',
+  DEVICE_UNRECOGNIZED: 'Marcado como desconhecido',
+  DEVICE_DELETED: 'Removido',
+  PORT_OPENED: 'Porta passou a aceitar conexões',
+  PORT_CLOSED: 'Porta deixou de aceitar conexões',
+  PORT_SCAN_COMPLETED: 'Verificação de portas',
+  PORT_SCAN_FAILED: 'Falha na verificação de portas',
+  DISCOVERY_COMPLETED: 'Descoberta concluída',
+  DISCOVERY_FAILED: 'Falha na descoberta',
+  CAPTURE_STARTED: 'Captura iniciada',
+  CAPTURE_FINISHED: 'Captura encerrada',
+  CAPTURE_FAILED: 'Falha na captura',
+  TRAFFIC_NEW_SERVICE: 'Novo serviço no tráfego',
+};

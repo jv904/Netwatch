@@ -16,7 +16,9 @@ atividades suspeitas e os alertas.
 
 ## Executando
 
-Pré-requisitos: Java 21, Node 24+ e Docker.
+Pré-requisitos: Java 21, Node 24+ e Docker. Para o monitoramento de tráfego completo, também o
+[Npcap](https://npcap.com/#download) no Windows (ou a libpcap no Linux/macOS). Sem ele, a tela Tráfego
+funciona em modo limitado. Veja [docs/npcap.md](docs/npcap.md).
 
 ```bash
 # 1. Banco de dados
@@ -42,7 +44,8 @@ Detalhes de cada parte (rotas da API, configurações e telas) estão nos README
 - **Dispositivos**: inventário com IP, MAC, fabricante, nome e situação, e marcação como conhecido ou desconhecido.
 - **Descoberta**: varredura das redes privadas autorizadas (ping, TCP e tabela ARP) sem exigir privilégios de administrador.
 - **Portas e serviços**: verificação de portas comuns ou específicas, com histórico e detecção de portas que passaram a aceitar conexões.
-- **Tráfego**: conexões desta máquina pela tabela do sistema, sem instalar nada (programa, serviço, destino e vizinhos da rede), ou captura de pacotes com volume e protocolos se o Npcap/libpcap estiver instalado. Sempre restrito às redes autorizadas e só com metadados.
+- **Tráfego**: captura de pacotes (volume, protocolos, broadcast/multicast e equipamentos vistos no tráfego), restrita às redes autorizadas e só com metadados. **Exige o Npcap (Windows) ou a libpcap.** Sem o driver, o sistema roda em modo limitado, com as conexões desta máquina lidas da tabela do sistema. Detalhes em [docs/npcap.md](docs/npcap.md).
+- **Atividades**: histórico de tudo o que muda na rede (equipamentos novos, ausentes ou com outro IP, portas que passaram a aceitar conexões, serviços vistos no tráfego, descobertas e capturas), com linha do tempo, tipos, horários e dispositivos mais ativos.
 
 ## Roadmap
 
@@ -51,10 +54,10 @@ Detalhes de cada parte (rotas da API, configurações e telas) estão nos README
 - [x] 3. Descoberta de dispositivos
 - [x] 4. Verificação de portas
 - [x] 5. Captura de pacotes
-- [ ] 6. Análise de atividades e histórico de eventos
+- [x] 6. Análise de atividades e histórico de eventos
 - [ ] 7. Motor de segurança
 - [ ] 8. Gerenciamento de alertas
-- [x] 9. Interface Angular (parcial: telas das fases 1 a 5; cada fase nova entra com a sua tela)
+- [x] 9. Interface Angular (parcial: telas das fases 1 a 6; cada fase nova entra com a sua tela)
 - [ ] 10. Relatórios
 - [ ] 11. Configurações
 - [ ] 12. Testes e documentação finais

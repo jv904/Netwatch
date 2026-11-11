@@ -25,11 +25,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import com.netwatch.netwatch_api.activity.ActivityEvent;
+import com.netwatch.netwatch_api.activity.EventType;
 import com.netwatch.netwatch_api.common.exception.ConflictException;
 import com.netwatch.netwatch_api.common.exception.InvalidInputException;
 import com.netwatch.netwatch_api.common.exception.ResourceNotFoundException;
@@ -74,6 +77,7 @@ public class CaptureService implements DisposableBean {
     private final ArpTable arpTable;
     private final AuthorizedNetworks authorizedNetworks;
     private final CaptureProperties properties;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
 
     private final AtomicReference<Running> running = new AtomicReference<>();
@@ -90,7 +94,8 @@ public class CaptureService implements DisposableBean {
 
     public CaptureService(CaptureSessionRepository sessions, TrafficRecorder recorder, PacketSource packetSource,
             ConnectionTable connectionTable, LocalInterfaces localInterfaces, ArpTable arpTable,
-            AuthorizedNetworks authorizedNetworks, CaptureProperties properties, Clock clock) {
+            AuthorizedNetworks authorizedNetworks, CaptureProperties properties, ApplicationEventPublisher events,
+            Clock clock) {
         this.sessions = sessions;
         this.recorder = recorder;
         this.packetSource = packetSource;
@@ -99,6 +104,7 @@ public class CaptureService implements DisposableBean {
         this.arpTable = arpTable;
         this.authorizedNetworks = authorizedNetworks;
         this.properties = properties;
+        this.events = events;
         this.clock = clock;
     }
 
@@ -250,6 +256,10 @@ public class CaptureService implements DisposableBean {
             CaptureSession session = sessions.save(new CaptureSession(availability.mode(), name, description, localIp,
                     filter, now, deadline));
             run.state = new TrafficRecorder.SessionState(session.getId(), localSubnet);
+            events.publishEvent(ActivityEvent.of(EventType.CAPTURE_STARTED, null, localIp,
+                    (run.mode == CaptureMode.CONNECTIONS ? "Observação das conexões iniciada em " : "Captura iniciada em ")
+                            + description)
+                    .withDetails("Escopo: " + filter).withReference(session.getId()));
             captureThread.execute(() -> execute(run));
             log.info("Captura ({}) iniciada em {} ({}), escopo \"{}\", até {}.", run.mode, description, localIp,
                     filter, deadline);
@@ -410,11 +420,27 @@ public class CaptureService implements DisposableBean {
                 session.updateCounters(run.packets.get(), run.bytes.get(), run.state.newDevices);
                 session.finish(status, clock.instant(), stats.dropped(), error);
                 sessions.save(session);
+                events.publishEvent(finishedEvent(run, session).withReference(session.getId()));
             });
             log.info("Captura encerrada ({}): {} pacotes, {} bytes.", status, run.packets.get(), run.bytes.get());
         } catch (RuntimeException e) {
             log.error("Falha ao encerrar a sessão de captura", e);
         }
+    }
+
+    private static ActivityEvent finishedEvent(Running run, CaptureSession session) {
+        String what = run.mode == CaptureMode.CONNECTIONS ? "Observação das conexões" : "Captura";
+        if (session.getStatus() == CaptureSessionStatus.FAILED) {
+            return ActivityEvent.of(EventType.CAPTURE_FAILED, null, session.getLocalAddress(), what + " falhou")
+                    .withDetails(session.getErrorMessage());
+        }
+        String how = session.getStatus() == CaptureSessionStatus.STOPPED ? "parada" : "concluída";
+        String details = run.mode == CaptureMode.CONNECTIONS
+                ? session.getNewDevices() + " novos dispositivos"
+                : session.getPackets() + " pacotes, " + session.getBytes() + " bytes, " + session.getNewDevices()
+                        + " novos dispositivos";
+        return ActivityEvent.of(EventType.CAPTURE_FINISHED, null, session.getLocalAddress(), what + " " + how)
+                .withDetails(details);
     }
 
     /** Pede a parada; a sessão termina em até meio segundo e a última gravação acontece em seguida. */

@@ -35,7 +35,7 @@ export class Shell {
     { label: 'Descoberta', description: 'Varredura da rede', icon: 'radar', link: '/discovery' },
     { label: 'Portas e serviços', description: 'Exposição dos dispositivos', icon: 'ports', link: '/ports' },
     { label: 'Tráfego', description: 'Captura de pacotes', icon: 'traffic', link: '/traffic' },
-    { label: 'Monitoramento', description: 'Atividades da rede', icon: 'activity' },
+    { label: 'Atividades', description: 'Histórico de eventos', icon: 'activity', link: '/activity' },
     { label: 'Alertas', description: 'Possíveis ameaças', icon: 'bell' },
     { label: 'Relatórios', description: 'Histórico e análises', icon: 'report' },
     { label: 'Configurações', description: 'Preferências do sistema', icon: 'settings' },

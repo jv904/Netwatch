@@ -21,12 +21,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.netwatch.netwatch_api.activity.ActivityEvent;
+import com.netwatch.netwatch_api.activity.EventType;
 import com.netwatch.netwatch_api.common.exception.ConflictException;
 import com.netwatch.netwatch_api.common.exception.InvalidInputException;
 import com.netwatch.netwatch_api.common.exception.ResourceNotFoundException;
@@ -52,6 +55,7 @@ public class PortScanService implements DisposableBean {
     private final PortProber prober;
     private final PortScanProperties properties;
     private final TransactionTemplate transaction;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
 
     private final Set<UUID> scanningDevices = ConcurrentHashMap.newKeySet();
@@ -60,7 +64,8 @@ public class PortScanService implements DisposableBean {
 
     public PortScanService(PortScanRepository scans, PortScanResultRepository results,
             DevicePortRepository devicePorts, DeviceService deviceService, AuthorizedNetworks authorizedNetworks,
-            PortProber prober, PortScanProperties properties, TransactionTemplate transaction, Clock clock) {
+            PortProber prober, PortScanProperties properties, TransactionTemplate transaction,
+            ApplicationEventPublisher events, Clock clock) {
         this.scans = scans;
         this.results = results;
         this.devicePorts = devicePorts;
@@ -69,6 +74,7 @@ public class PortScanService implements DisposableBean {
         this.prober = prober;
         this.properties = properties;
         this.transaction = transaction;
+        this.events = events;
         this.clock = clock;
         this.connections = new Semaphore(Math.max(1, properties.concurrency()));
     }
@@ -184,14 +190,49 @@ public class PortScanService implements DisposableBean {
         results.saveAll(rows);
         devicePorts.saveAll(toSave.values());
         PortScan scan = scans.findById(scanId).orElseThrow();
-        scan.complete(now, counts.getOrDefault(PortState.OPEN, 0), counts.getOrDefault(PortState.CLOSED, 0),
-                counts.getOrDefault(PortState.FILTERED, 0));
+        int open = counts.getOrDefault(PortState.OPEN, 0);
+        scan.complete(now, open, counts.getOrDefault(PortState.CLOSED, 0), counts.getOrDefault(PortState.FILTERED, 0));
+        publishChanges(scan, rows, open);
+    }
+
+    /** Portas que passaram a aceitar ou deixaram de aceitar conexões viram eventos no histórico. */
+    private void publishChanges(PortScan scan, List<PortScanResult> rows, int open) {
+        String ip = scan.getIpAddress();
+        for (PortScanResult r : rows) {
+            String port = r.getPort() + (r.getService() != null ? " (" + r.getService() + ")" : "");
+            if (r.isNewlyOpened()) {
+                publish(ActivityEvent.of(EventType.PORT_OPENED, scan.getDeviceId(), ip,
+                        "Porta " + port + " passou a aceitar conexões em " + ip)
+                        .withDetails("Antes: " + describe(r.getPreviousState())), scan);
+            } else if (r.getPreviousState() == PortState.OPEN && r.getState() != PortState.OPEN) {
+                publish(ActivityEvent.of(EventType.PORT_CLOSED, scan.getDeviceId(), ip,
+                        "Porta " + port + " deixou de aceitar conexões em " + ip)
+                        .withDetails("Agora: " + describe(r.getState())), scan);
+            }
+        }
+        publish(ActivityEvent.of(EventType.PORT_SCAN_COMPLETED, scan.getDeviceId(), ip,
+                "Verificação de portas em " + ip + " concluída: " + open + (open == 1 ? " aberta" : " abertas"))
+                .withDetails(scan.getRequestedPorts()), scan);
+    }
+
+    private static String describe(PortState state) {
+        return switch (state) {
+            case OPEN -> "aceitava conexões";
+            case CLOSED -> "fechada";
+            case FILTERED -> "sem resposta";
+        };
+    }
+
+    private void publish(ActivityEvent event, PortScan scan) {
+        events.publishEvent(event.withReference(scan.getId()));
     }
 
     private void markFailed(UUID scanId, String message) {
         scans.findById(scanId).ifPresent(scan -> {
             scan.fail(clock.instant(), message);
             scans.save(scan);
+            publish(ActivityEvent.of(EventType.PORT_SCAN_FAILED, scan.getDeviceId(), scan.getIpAddress(),
+                    "Verificação de portas em " + scan.getIpAddress() + " falhou").withDetails(message), scan);
         });
     }
 

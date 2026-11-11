@@ -290,3 +290,74 @@ export interface DeviceTraffic {
   peers: { ip: string; deviceId: string | null; name: string | null; bytes: number; packets: number; flows: number }[];
   recentFlows: TrafficFlow[];
 }
+
+// ---------- Atividades (histórico de eventos) ----------
+
+export type EventSeverity = 'INFO' | 'NOTICE' | 'WARNING';
+export type EventCategory = 'DEVICE' | 'PORT' | 'DISCOVERY' | 'TRAFFIC';
+export type EventType =
+  | 'DEVICE_DISCOVERED'
+  | 'DEVICE_IP_CHANGED'
+  | 'DEVICE_RETURNED'
+  | 'DEVICE_INACTIVE'
+  | 'DEVICE_CREATED'
+  | 'DEVICE_RECOGNIZED'
+  | 'DEVICE_UNRECOGNIZED'
+  | 'DEVICE_DELETED'
+  | 'PORT_OPENED'
+  | 'PORT_CLOSED'
+  | 'PORT_SCAN_COMPLETED'
+  | 'PORT_SCAN_FAILED'
+  | 'DISCOVERY_COMPLETED'
+  | 'DISCOVERY_FAILED'
+  | 'CAPTURE_STARTED'
+  | 'CAPTURE_FINISHED'
+  | 'CAPTURE_FAILED'
+  | 'TRAFFIC_NEW_SERVICE';
+export type ActivityWindow = '24h' | '7d' | '30d';
+
+export interface NetworkEvent {
+  id: string;
+  occurredAt: string;
+  type: EventType;
+  category: EventCategory;
+  severity: EventSeverity;
+  title: string;
+  details: string | null;
+  deviceId: string | null;
+  deviceName: string | null;
+  ipAddress: string | null;
+  referenceId: string | null;
+}
+
+export interface EventQuery {
+  type?: EventType | '';
+  category?: EventCategory | '';
+  severity?: EventSeverity | '';
+  deviceId?: string;
+  q?: string;
+  window?: ActivityWindow;
+  page?: number;
+  size?: number;
+}
+
+export interface ActivitySummary {
+  window: ActivityWindow;
+  since: string;
+  until: string;
+  bucketSeconds: number;
+  timeZone: string;
+  totals: {
+    total: number;
+    warnings: number;
+    notices: number;
+    info: number;
+    newDevices: number;
+    portsOpened: number;
+    newServices: number;
+  };
+  series: { at: string; total: number; warnings: number }[];
+  byType: { type: EventType; category: EventCategory; severity: EventSeverity; count: number }[];
+  byHour: { hour: number; count: number }[];
+  topDevices: { deviceId: string; name: string; ipAddress: string; count: number; warnings: number }[];
+}

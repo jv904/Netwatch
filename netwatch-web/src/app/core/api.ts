@@ -3,6 +3,10 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 
 import {
+  ActivitySummary,
+  ActivityWindow,
+  EventQuery,
+  NetworkEvent,
   AuthorizedNetwork,
   CaptureInterface,
   CaptureSession,
@@ -165,5 +169,27 @@ export class Api {
 
   deviceTraffic(deviceId: string, window: TrafficWindow = '24h'): Observable<DeviceTraffic> {
     return this.http.get<DeviceTraffic>(`/api/devices/${deviceId}/traffic`, { params: { window } });
+  }
+
+  // ---------- Atividades ----------
+
+  events(query: EventQuery): Observable<Page<NetworkEvent>> {
+    let params = new HttpParams().set('page', query.page ?? 0).set('size', query.size ?? 50);
+    if (query.type) params = params.set('type', query.type);
+    if (query.category) params = params.set('category', query.category);
+    if (query.severity) params = params.set('severity', query.severity);
+    if (query.deviceId) params = params.set('deviceId', query.deviceId);
+    if (query.q?.trim()) params = params.set('q', query.q.trim());
+    if (query.window) params = params.set('window', query.window);
+    return this.http.get<Page<NetworkEvent>>('/api/events', { params });
+  }
+
+  eventSummary(window: ActivityWindow): Observable<ActivitySummary> {
+    return this.http.get<ActivitySummary>('/api/events/summary', { params: { window } });
+  }
+
+  deviceEvents(deviceId: string, page = 0, size = 10): Observable<Page<NetworkEvent>> {
+    const params = new HttpParams().set('page', page).set('size', size);
+    return this.http.get<Page<NetworkEvent>>(`/api/devices/${deviceId}/events`, { params });
   }
 }

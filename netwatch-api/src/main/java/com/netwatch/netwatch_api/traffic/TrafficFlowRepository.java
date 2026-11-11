@@ -15,6 +15,8 @@ public interface TrafficFlowRepository extends JpaRepository<TrafficFlow, UUID>,
 
     long countByLastSeenGreaterThanEqual(Instant since);
 
+    boolean existsByDstDeviceIdAndProtocolAndServicePort(UUID dstDeviceId, TrafficProtocol protocol, Integer servicePort);
+
     /** Volume enviado por IP de origem. */
     @Query("""
             select f.srcIp as ip, sum(f.bytes) as bytes, sum(f.packets) as packets, count(f) as flows
