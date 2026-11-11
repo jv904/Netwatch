@@ -163,4 +163,14 @@ describe('Api', () => {
     expect(api.reportCsvUrl('r1')).toBe('/api/reports/r1/csv');
     expect(api.reportCsvUrl('r1', 2)).toBe('/api/reports/r1/csv?table=2');
   });
+
+  it('altera e restaura configurações', () => {
+    api.updateSettings({ 'capture.mode': 'connections', 'ports.timeout-ms': '3000' }).subscribe();
+    const put = http.expectOne('/api/settings');
+    expect(put.request.method).toBe('PUT');
+    expect(put.request.body).toEqual({ 'capture.mode': 'connections', 'ports.timeout-ms': '3000' });
+
+    api.restoreSetting('ports.timeout-ms').subscribe();
+    expect(http.expectOne('/api/settings/ports.timeout-ms').request.method).toBe('DELETE');
+  });
 });

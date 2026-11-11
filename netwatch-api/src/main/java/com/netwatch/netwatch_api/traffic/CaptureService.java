@@ -43,6 +43,8 @@ import com.netwatch.netwatch_api.discovery.Ipv4Network;
 import com.netwatch.netwatch_api.discovery.probe.ArpTable;
 import com.netwatch.netwatch_api.discovery.probe.LocalInterfaces;
 import com.netwatch.netwatch_api.discovery.probe.LocalInterfaces.LocalAddress;
+import com.netwatch.netwatch_api.settings.SettingKey;
+import com.netwatch.netwatch_api.settings.SettingsService;
 import com.netwatch.netwatch_api.traffic.FlowAggregator.FlowKey;
 import com.netwatch.netwatch_api.traffic.capture.BpfFilterBuilder;
 import com.netwatch.netwatch_api.traffic.capture.PacketMeta;
@@ -77,6 +79,7 @@ public class CaptureService implements DisposableBean {
     private final ArpTable arpTable;
     private final AuthorizedNetworks authorizedNetworks;
     private final CaptureProperties properties;
+    private final SettingsService settings;
     private final ApplicationEventPublisher events;
     private final Clock clock;
 
@@ -94,8 +97,8 @@ public class CaptureService implements DisposableBean {
 
     public CaptureService(CaptureSessionRepository sessions, TrafficRecorder recorder, PacketSource packetSource,
             ConnectionTable connectionTable, LocalInterfaces localInterfaces, ArpTable arpTable,
-            AuthorizedNetworks authorizedNetworks, CaptureProperties properties, ApplicationEventPublisher events,
-            Clock clock) {
+            AuthorizedNetworks authorizedNetworks, CaptureProperties properties, SettingsService settings,
+            ApplicationEventPublisher events, Clock clock) {
         this.sessions = sessions;
         this.recorder = recorder;
         this.packetSource = packetSource;
@@ -104,6 +107,7 @@ public class CaptureService implements DisposableBean {
         this.arpTable = arpTable;
         this.authorizedNetworks = authorizedNetworks;
         this.properties = properties;
+        this.settings = settings;
         this.events = events;
         this.clock = clock;
     }
@@ -154,15 +158,28 @@ public class CaptureService implements DisposableBean {
     }
 
     public boolean isEnabled() {
-        return properties.enabled();
+        return settings.bool(SettingKey.CAPTURE_ENABLED);
+    }
+
+    /** Duração padrão e máxima de uma sessão (tela de Configurações). */
+    public Duration defaultDuration() {
+        return settings.minutes(SettingKey.CAPTURE_DEFAULT_DURATION);
+    }
+
+    public Duration maxDuration() {
+        return settings.minutes(SettingKey.CAPTURE_MAX_DURATION);
+    }
+
+    public int retentionDays() {
+        return settings.integer(SettingKey.CAPTURE_RETENTION_DAYS);
     }
 
     public Availability availability() {
-        if (!properties.enabled()) {
+        if (!isEnabled()) {
             return new Availability(false, null, false, false, null,
                     "A observação de tráfego está desativada (NETWATCH_CAPTURE_ENABLED=false).");
         }
-        String configured = properties.mode() == null ? "auto" : properties.mode().trim().toLowerCase(Locale.ROOT);
+        String configured = settings.value(SettingKey.CAPTURE_MODE).toLowerCase(Locale.ROOT);
         boolean tableAvailable = connectionTable.available();
         if (configured.equals("connections")) {
             return new Availability(true, tableAvailable ? CaptureMode.CONNECTIONS : null, false, tableAvailable, null,
@@ -208,10 +225,10 @@ public class CaptureService implements DisposableBean {
         if (!availability.available()) {
             throw new ServiceUnavailableException(availability.reason());
         }
-        Duration duration = durationMinutes != null ? Duration.ofMinutes(durationMinutes) : properties.defaultDuration();
-        if (duration.compareTo(Duration.ofMinutes(1)) < 0 || duration.compareTo(properties.maxDuration()) > 0) {
+        Duration duration = durationMinutes != null ? Duration.ofMinutes(durationMinutes) : defaultDuration();
+        if (duration.compareTo(Duration.ofMinutes(1)) < 0 || duration.compareTo(maxDuration()) > 0) {
             throw new InvalidInputException("A duração deve ficar entre 1 minuto e "
-                    + properties.maxDuration().toMinutes() + " minutos.");
+                    + maxDuration().toMinutes() + " minutos.");
         }
         List<Ipv4Network> networks = authorizedNetworks();
         if (networks.isEmpty()) {
@@ -333,7 +350,7 @@ public class CaptureService implements DisposableBean {
 
     /** Lê a tabela de conexões a cada {@code connection-poll-interval} até a sessão terminar. */
     private void pollConnections(Running run) {
-        long pollMs = Math.max(1000, properties.connectionPollInterval().toMillis());
+        long pollMs = Math.max(1000, settings.integer(SettingKey.CAPTURE_POLL_SECONDS) * 1000L);
         while (!shouldStop(run)) {
             sampleConnections(run);
             long next = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(pollMs);

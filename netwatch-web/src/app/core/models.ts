@@ -294,7 +294,7 @@ export interface DeviceTraffic {
 // ---------- Atividades (histórico de eventos) ----------
 
 export type EventSeverity = 'INFO' | 'NOTICE' | 'WARNING';
-export type EventCategory = 'DEVICE' | 'PORT' | 'DISCOVERY' | 'TRAFFIC' | 'SECURITY';
+export type EventCategory = 'DEVICE' | 'PORT' | 'DISCOVERY' | 'TRAFFIC' | 'SECURITY' | 'SYSTEM';
 export type EventType =
   | 'DEVICE_DISCOVERED'
   | 'DEVICE_IP_CHANGED'
@@ -317,7 +317,8 @@ export type EventType =
   | 'TRAFFIC_NEW_SERVICE'
   | 'ALERT_RAISED'
   | 'ALERT_RESOLVED'
-  | 'ALERT_DISMISSED';
+  | 'ALERT_DISMISSED'
+  | 'SETTINGS_CHANGED';
 export type ActivityWindow = '24h' | '7d' | '30d';
 
 export interface NetworkEvent {
@@ -541,6 +542,41 @@ export interface ReportDocument {
 export interface ReportView {
   report: ReportSummary;
   document: ReportDocument;
+}
+
+// ---------- Configurações ----------
+
+export type SettingType = 'BOOLEAN' | 'INTEGER' | 'CHOICE' | 'CIDR_LIST';
+
+export interface SettingItem {
+  key: string;
+  group: string;
+  groupTitle: string;
+  type: SettingType;
+  label: string;
+  description: string;
+  value: string;
+  defaultValue: string;
+  custom: boolean;
+  min: number | null;
+  max: number | null;
+  options: string[];
+  unit: string | null;
+  updatedAt: string | null;
+}
+
+export interface SystemInfo {
+  javaVersion: string;
+  os: string;
+  database: string;
+  timeZone: string;
+  startedAt: string;
+  uptimeSeconds: number;
+  authorizedNetworks: { cidr: string; source: string; virtual: boolean }[];
+  networksConfigured: boolean;
+  captureMode: CaptureMode | null;
+  captureReason: string | null;
+  data: { devices: number; events: number; flows: number; alerts: number; reports: number };
 }
 
 export interface SecuritySummary {

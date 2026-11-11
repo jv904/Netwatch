@@ -3,6 +3,8 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 
 import {
+  SettingItem,
+  SystemInfo,
   GenerateReportRequest,
   ReportSummary,
   ReportType,
@@ -308,5 +310,24 @@ export class Api {
 
   reportCsvUrl(id: string, table?: number): string {
     return table === undefined ? `/api/reports/${id}/csv` : `/api/reports/${id}/csv?table=${table}`;
+  }
+
+  // ---------- Configurações ----------
+
+  settings(): Observable<SettingItem[]> {
+    return this.http.get<SettingItem[]>('/api/settings');
+  }
+
+  /** Altera várias configurações de uma vez (tudo ou nada). */
+  updateSettings(changes: Record<string, string>): Observable<SettingItem[]> {
+    return this.http.put<SettingItem[]>('/api/settings', changes);
+  }
+
+  restoreSetting(key: string): Observable<SettingItem[]> {
+    return this.http.delete<SettingItem[]>(`/api/settings/${encodeURIComponent(key)}`);
+  }
+
+  systemInfo(): Observable<SystemInfo> {
+    return this.http.get<SystemInfo>('/api/settings/system');
   }
 }

@@ -40,7 +40,7 @@ export class Shell {
     { label: 'Segurança', description: 'Regras e detecções', icon: 'shield', link: '/security' },
     { label: 'Alertas', description: 'Tratar alertas', icon: 'bell', link: '/alerts' },
     { label: 'Relatórios', description: 'PDF, CSV e histórico', icon: 'report', link: '/reports' },
-    { label: 'Configurações', description: 'Preferências do sistema', icon: 'settings' },
+    { label: 'Configurações', description: 'Preferências do sistema', icon: 'settings', link: '/settings' },
   ];
 
   protected readonly apiOnline = signal<boolean | null>(null);

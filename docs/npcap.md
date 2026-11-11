@@ -55,8 +55,9 @@ Não é preciso alterar nada no código para usar a captura de pacotes:
    ```
 5. Na tela **Tráfego**, escolha a placa de rede que está na rede autorizada e inicie a captura.
 
-Para forçar um modo, defina `NETWATCH_CAPTURE_MODE=packets` ou `NETWATCH_CAPTURE_MODE=connections`.
-Para desligar a observação de tráfego, defina `NETWATCH_CAPTURE_ENABLED=false`.
+Para forçar um modo, use a tela **Configurações → Tráfego → Fonte do tráfego** (vale na hora) ou defina
+`NETWATCH_CAPTURE_MODE=packets` / `NETWATCH_CAPTURE_MODE=connections`. Para desligar a observação de tráfego,
+desligue "Observação de tráfego" na mesma tela ou defina `NETWATCH_CAPTURE_ENABLED=false`.
 
 ## Para ver a rede inteira
 

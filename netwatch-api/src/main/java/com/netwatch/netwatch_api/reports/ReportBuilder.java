@@ -607,6 +607,7 @@ class ReportBuilder {
             case ALERT_RAISED -> "Alerta aberto";
             case ALERT_RESOLVED -> "Alerta resolvido";
             case ALERT_DISMISSED -> "Alerta descartado";
+            case SETTINGS_CHANGED -> "Configuração alterada";
         };
     }
 }

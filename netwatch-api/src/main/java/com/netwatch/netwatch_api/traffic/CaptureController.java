@@ -28,11 +28,9 @@ import jakarta.validation.Valid;
 public class CaptureController {
 
     private final CaptureService capture;
-    private final CaptureProperties properties;
 
-    public CaptureController(CaptureService capture, CaptureProperties properties) {
+    public CaptureController(CaptureService capture) {
         this.capture = capture;
-        this.properties = properties;
     }
 
     /** Situação da captura: driver, redes autorizadas e sessão em andamento. */
@@ -48,9 +46,9 @@ public class CaptureController {
                 source.reason(),
                 source.libraryVersion(),
                 capture.authorizedNetworks().stream().map(Object::toString).toList(),
-                (int) properties.maxDuration().toMinutes(),
-                (int) properties.defaultDuration().toMinutes(),
-                properties.retentionDays(),
+                (int) capture.maxDuration().toMinutes(),
+                (int) capture.defaultDuration().toMinutes(),
+                capture.retentionDays(),
                 capture.active().map(CaptureSessionResponse::from).orElse(null),
                 capture.last().map(CaptureSessionResponse::from).orElse(null));
     }

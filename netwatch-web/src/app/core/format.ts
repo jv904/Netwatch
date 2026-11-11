@@ -125,6 +125,7 @@ export const EVENT_CATEGORY_LABEL: Record<EventCategory, string> = {
   DISCOVERY: 'Descoberta',
   TRAFFIC: 'Tráfego',
   SECURITY: 'Segurança',
+  SYSTEM: 'Sistema',
 };
 
 export const EVENT_TYPE_LABEL: Record<EventType, string> = {
@@ -150,6 +151,7 @@ export const EVENT_TYPE_LABEL: Record<EventType, string> = {
   ALERT_RAISED: 'Alerta aberto',
   ALERT_RESOLVED: 'Alerta resolvido',
   ALERT_DISMISSED: 'Alerta descartado',
+  SETTINGS_CHANGED: 'Configuração alterada',
 };
 
 export const ALERT_SEVERITY_LABEL: Record<AlertSeverity, string> = {

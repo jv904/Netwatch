@@ -1,0 +1,60 @@
+# NetWatch completo: banco + API + tela, com um comando.
+#
+#   docker compose up -d --build        →  tela em http://localhost:4200
+#
+# Portas e redes autorizadas podem ser ajustadas num arquivo .env ao lado deste (veja .env.example).
+# Observação: dentro de um container a API não enxerga a rede local como enxergaria rodando direto na
+# máquina (sem tabela ARP e sem tabela de conexões do Windows). Para descoberta e tráfego completos, rode a API
+# direto na máquina (README) ou, no Linux, use também docker-compose.linux-host.yml.
+
+name: netwatch
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: netwatch
+      POSTGRES_USER: netwatch
+      POSTGRES_PASSWORD: ${NETWATCH_DB_PASSWORD:-netwatch}
+    volumes:
+      - netwatch-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U netwatch -d netwatch"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  api:
+    build: ./netwatch-api
+    image: netwatch-api:latest
+    environment:
+      NETWATCH_DB_URL: jdbc:postgresql://db:5432/netwatch
+      NETWATCH_DB_USER: netwatch
+      NETWATCH_DB_PASSWORD: ${NETWATCH_DB_PASSWORD:-netwatch}
+      # Sem esta variável, a API usaria a rede interna do Docker. Informe a rede da empresa/casa
+      # (também dá para ajustar depois na tela Configurações).
+      NETWATCH_DISCOVERY_AUTHORIZED_NETWORKS: ${NETWATCH_DISCOVERY_AUTHORIZED_NETWORKS:-}
+      NETWATCH_CORS_ORIGINS: http://localhost:${NETWATCH_WEB_PORT:-4200}
+      TZ: ${TZ:-America/Sao_Paulo}
+    ports:
+      - "${NETWATCH_API_PORT:-8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build: ./netwatch-web
+    image: netwatch-web:latest
+    environment:
+      NETWATCH_API_UPSTREAM: api:8080
+    ports:
+      - "${NETWATCH_WEB_PORT:-4200}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  netwatch-db:

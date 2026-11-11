@@ -16,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.netwatch.netwatch_api.common.exception.ResourceNotFoundException;
 import com.netwatch.netwatch_api.reports.ReportPeriod.Preset;
+import com.netwatch.netwatch_api.settings.SettingKey;
+import com.netwatch.netwatch_api.settings.SettingsService;
 
 import tools.jackson.databind.ObjectMapper;
 
@@ -29,15 +31,15 @@ public class ReportService {
     private final ReportRepository reports;
     private final ReportBuilder builder;
     private final ObjectMapper json;
-    private final ReportProperties properties;
+    private final SettingsService settings;
     private final Clock clock;
 
-    public ReportService(ReportRepository reports, ReportBuilder builder, ObjectMapper json,
-            ReportProperties properties, Clock clock) {
+    public ReportService(ReportRepository reports, ReportBuilder builder, ObjectMapper json, SettingsService settings,
+            Clock clock) {
         this.reports = reports;
         this.builder = builder;
         this.json = json;
-        this.properties = properties;
+        this.settings = settings;
         this.clock = clock;
     }
 
@@ -74,7 +76,7 @@ public class ReportService {
     /** Segunda-feira, 6h: relatório geral da semana anterior. */
     @Scheduled(cron = "0 0 6 * * MON")
     public void weekly() {
-        if (properties.weekly()) {
+        if (settings.bool(SettingKey.REPORTS_WEEKLY)) {
             scheduled(Preset.PREVIOUS_WEEK);
         }
     }
@@ -82,7 +84,7 @@ public class ReportService {
     /** Dia 1º, 6h30: relatório geral do mês anterior. */
     @Scheduled(cron = "0 30 6 1 * *")
     public void monthly() {
-        if (properties.monthly()) {
+        if (settings.bool(SettingKey.REPORTS_MONTHLY)) {
             scheduled(Preset.PREVIOUS_MONTH);
         }
     }
@@ -107,7 +109,7 @@ public class ReportService {
     @Scheduled(initialDelayString = "PT5M", fixedDelayString = "PT12H")
     @Transactional
     public void purge() {
-        var cutoff = clock.instant().minus(Duration.ofDays(Math.max(1, properties.retentionDays())));
+        var cutoff = clock.instant().minus(Duration.ofDays(Math.max(1, settings.integer(SettingKey.REPORTS_RETENTION_DAYS))));
         reports.findAll().stream().filter(r -> r.getGeneratedAt().isBefore(cutoff)).forEach(reports::delete);
     }
 }

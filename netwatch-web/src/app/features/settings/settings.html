@@ -1,0 +1,146 @@
+<div class="page-header">
+  <div>
+    <h1>Configurações</h1>
+    <p>Ajustes do NetWatch. As alterações valem na hora, sem reiniciar a API; "Restaurar padrão" volta ao valor do application.yaml.</p>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="main-col">
+    @if (items() === null) {
+      <div class="skeleton" style="height: 420px"></div>
+    }
+    @for (g of groups(); track g.title) {
+      <section class="card group">
+        <div class="card-header"><h2>{{ g.title }}</h2></div>
+        @for (item of g.items; track item.key) {
+          <div class="setting" [class.changed]="current(item) !== item.value">
+            <div class="info">
+              <label class="label" [attr.for]="'s-' + item.key">{{ item.label }}</label>
+              <p class="description">{{ item.description }}</p>
+              <p class="meta">
+                Padrão: {{ display(item, item.defaultValue) }}
+                @if (item.custom) {
+                  · <span class="custom">alterado {{ item.updatedAt ? 'em ' + formatDateTime(item.updatedAt) : '' }}</span>
+                  <button type="button" class="as-link" (click)="restore(item)">Restaurar padrão</button>
+                }
+              </p>
+            </div>
+            <div class="control">
+              @switch (item.type) {
+                @case ('BOOLEAN') {
+                  <label class="switch">
+                    <input [id]="'s-' + item.key" type="checkbox" [checked]="current(item) === 'true'" (change)="toggle(item, $event)" />
+                    <span class="track"><span class="thumb"></span></span>
+                  </label>
+                }
+                @case ('INTEGER') {
+                  <span class="number">
+                    <input [id]="'s-' + item.key" class="input" type="number" [attr.min]="item.min" [attr.max]="item.max"
+                      [value]="current(item)" (input)="set(item, $any($event.target).value)" />
+                    @if (item.unit) {
+                      <span class="unit">{{ item.unit }}</span>
+                    }
+                  </span>
+                }
+                @case ('CHOICE') {
+                  <select [id]="'s-' + item.key" class="select" [value]="current(item)" (change)="set(item, $any($event.target).value)">
+                    @for (o of item.options; track o) {
+                      <option [value]="o" [selected]="o === current(item)">{{ choiceLabels[o] ?? o }}</option>
+                    }
+                  </select>
+                }
+                @case ('CIDR_LIST') {
+                  <input [id]="'s-' + item.key" class="input mono wide" placeholder="Ex.: 192.168.100.0/24 (vazio = automático)"
+                    [value]="current(item)" (input)="set(item, $any($event.target).value)" />
+                }
+              }
+            </div>
+          </div>
+        }
+      </section>
+    }
+
+    <section class="card group">
+      <div class="card-header"><h2>Preferências deste navegador</h2></div>
+      <div class="setting">
+        <div class="info">
+          <span class="label">Notificações do navegador</span>
+          <p class="description">Mostra uma notificação quando surgir alerta alto ou crítico, mesmo com a aba em segundo plano.</p>
+        </div>
+        <div class="control">
+          <label class="switch">
+            <input type="checkbox" [checked]="notifier.browserNotifications()" (change)="toggleNotifications($event)" aria-label="Notificações do navegador" />
+            <span class="track"><span class="thumb"></span></span>
+          </label>
+        </div>
+      </div>
+      <p class="muted small">As regras do motor de segurança (ligar, desligar, gravidade e parâmetros) ficam na tela <a class="link" routerLink="/security">Segurança</a>.</p>
+    </section>
+  </div>
+
+  <aside class="side-col">
+    <section class="card">
+      <div class="card-header"><h2><app-icon name="settings" [size]="16" /> Sistema</h2></div>
+      @if (system(); as s) {
+        <dl class="kv">
+          <dt>Redes em uso</dt>
+          <dd>
+            @for (n of s.authorizedNetworks; track n.cidr) {
+              <div><span class="mono">{{ n.cidr }}</span> <span class="muted small">{{ n.source }}{{ n.virtual ? ' (virtual)' : '' }}</span></div>
+            } @empty {
+              <span class="muted">nenhuma encontrada</span>
+            }
+            @if (!s.networksConfigured) {
+              <div class="muted small">Detectadas automaticamente pelas placas de rede.</div>
+            }
+          </dd>
+          <dt>Fonte de tráfego</dt>
+          <dd>
+            {{ s.captureMode === 'PACKETS' ? 'Captura de pacotes' : s.captureMode === 'CONNECTIONS' ? 'Tabela de conexões' : 'Indisponível' }}
+            @if (s.captureReason) {
+              <div class="muted small">{{ s.captureReason }}</div>
+            }
+          </dd>
+          <dt>Banco de dados</dt>
+          <dd>{{ s.database }}</dd>
+          <dt>Java</dt>
+          <dd>{{ s.javaVersion }}</dd>
+          <dt>Sistema</dt>
+          <dd>{{ s.os }}</dd>
+          <dt>Fuso horário</dt>
+          <dd>{{ s.timeZone }}</dd>
+          <dt>API no ar há</dt>
+          <dd>{{ uptime() }} <span class="muted small">(desde {{ formatDateTime(s.startedAt) }})</span></dd>
+        </dl>
+        <h3>Dados guardados</h3>
+        <dl class="kv">
+          <dt>Dispositivos</dt>
+          <dd class="nums">{{ s.data.devices.toLocaleString('pt-BR') }}</dd>
+          <dt>Eventos</dt>
+          <dd class="nums">{{ s.data.events.toLocaleString('pt-BR') }}</dd>
+          <dt>Fluxos de tráfego</dt>
+          <dd class="nums">{{ s.data.flows.toLocaleString('pt-BR') }}</dd>
+          <dt>Alertas</dt>
+          <dd class="nums">{{ s.data.alerts.toLocaleString('pt-BR') }}</dd>
+          <dt>Relatórios</dt>
+          <dd class="nums">{{ s.data.reports.toLocaleString('pt-BR') }}</dd>
+        </dl>
+      } @else {
+        <div class="skeleton" style="height: 260px"></div>
+      }
+    </section>
+  </aside>
+</div>
+
+@if (changes().length) {
+  <div class="save-bar" role="region" aria-label="Alterações não salvas">
+    <span>{{ changes().length }} {{ changes().length === 1 ? 'alteração não salva' : 'alterações não salvas' }}</span>
+    <span class="spacer"></span>
+    <button class="btn btn-ghost btn-sm" type="button" (click)="discard()" [disabled]="saving()">Descartar</button>
+    <button class="btn btn-primary btn-sm" type="button" (click)="save()" [disabled]="saving()">
+      @if (saving()) { <span class="spinner"></span> }
+      Salvar
+    </button>
+  </div>
+}

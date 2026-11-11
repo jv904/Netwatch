@@ -15,7 +15,17 @@ docker compose up -d          # PostgreSQL 17 em localhost:5432 (netwatch/netwat
 Variáveis de ambiente opcionais: `NETWATCH_DB_URL`, `NETWATCH_DB_USER`, `NETWATCH_DB_PASSWORD`,
 `NETWATCH_PORT`, `NETWATCH_CORS_ORIGINS` (padrão `http://localhost:4200`, para o Angular).
 
-O esquema do banco é versionado com Flyway em `src/main/resources/db/migration`.
+O esquema do banco é versionado com Flyway em `src/main/resources/db/migration` (V1 a V10).
+
+### Imagem Docker
+
+O [`Dockerfile`](Dockerfile) compila e gera a imagem (Java 21 JRE, com libpcap e verificação de saúde):
+
+```bash
+docker build -t netwatch-api .
+```
+
+Para subir o sistema completo (banco + API + tela), use o `docker-compose.yml` da raiz do repositório.
 
 ## Estrutura
 
@@ -28,11 +38,14 @@ com.netwatch.netwatch_api
 ├── ports/        verificação de portas e serviços (Fase 4)
 ├── traffic/      tráfego: sessões, fluxos e estatísticas (Fase 5)
 ├── activity/     histórico de eventos e análise de atividades (Fase 6)
-├── security/     motor de segurança: regras e alertas (Fase 7)
+├── security/     motor de segurança: regras e alertas (Fases 7 e 8)
+├── reports/      relatórios: conteúdo, PDF, CSV e emissão automática (Fase 10)
+├── settings/     configurações editáveis pela tela (Fase 11)
 └── dashboard/    visão geral para a tela inicial
 ```
 
-Cada módulo funcional (dispositivos, portas, tráfego, alertas...) terá seu próprio pacote.
+Cada módulo funcional tem seu próprio pacote. Os módulos se comunicam por eventos (`ActivityEvent`): a coleta
+(dispositivos, portas, tráfego) publica, o histórico grava, o motor de segurança avalia e gera alertas.
 
 ## API — Dispositivos
 
@@ -241,6 +254,29 @@ anterior) e todo dia 1º às 6h30 (mês anterior), sem duplicar se a API reinici
 Configurações em `netwatch.reports.*`: `weekly` (`NETWATCH_REPORTS_WEEKLY`), `monthly` (`NETWATCH_REPORTS_MONTHLY`)
 e `retention-days` (365).
 
+## API — Configurações
+
+Configurações editáveis pela tela, que **valem na hora**, sem reiniciar. O valor de fábrica vem do
+`application.yaml` (ou da variável de ambiente); o que for alterado fica na tabela `app_settings`. Toda alteração
+aparece no histórico de atividades (categoria Sistema).
+
+| Grupo | Configurações (chave) |
+|---|---|
+| Descoberta e escopo | `discovery.authorized-networks` (faixas privadas; vazio = placas de rede), `discovery.schedule.enabled`, `discovery.schedule.interval-minutes` |
+| Verificação de portas | `ports.timeout-ms` |
+| Tráfego | `capture.enabled`, `capture.mode` (`auto`, `packets`, `connections`), `capture.connection-poll-seconds`, `capture.default-duration-minutes`, `capture.max-duration-minutes` |
+| Relatórios automáticos | `reports.weekly`, `reports.monthly` |
+| Retenção de dados | `capture.retention-days`, `activity.retention-days`, `reports.retention-days` |
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/api/settings` | Cada configuração: valor em uso, valor de fábrica, se foi alterada, limites e opções |
+| PUT | `/api/settings` | `{"capture.mode":"connections","ports.timeout-ms":"3000"}`; valida tudo antes de gravar (tudo ou nada) |
+| DELETE | `/api/settings/{chave}` | Volta ao valor do application.yaml |
+| GET | `/api/settings/system` | Java, sistema, banco, fuso, tempo no ar, redes em uso, fonte de tráfego e quantidade de dados guardados |
+
+As regras do motor de segurança têm sua própria configuração em `/api/security/rules`.
+
 ## API — Dashboard
 
 `GET /api/dashboard/overview` — indicadores de dispositivos, portas abertas, última descoberta,
@@ -256,11 +292,11 @@ A interface Angular fica em [`../netwatch-web`](../netwatch-web).
 - [x] Fase 2 — Cadastro e gerenciamento de dispositivos
 - [x] Fase 3 — Descoberta de dispositivos
 - [x] Fase 4 — Verificação de portas
-- [x] Fase 9 (parcial) — Interface Angular para as fases 1–10 (cada fase nova já entra com sua tela)
 - [x] Fase 5 — Tráfego: tabela de conexões (sem driver) ou captura de pacotes (Npcap/libpcap)
 - [x] Fase 6 — Análise de atividades / histórico de eventos
 - [x] Fase 7 — Motor de segurança
 - [x] Fase 8 — Alertas
+- [x] Fase 9 — Interface Angular (telas de todas as fases)
 - [x] Fase 10 — Relatórios (tela, PDF, CSV e emissão automática)
-- [ ] Fase 11 — Configurações
-- [ ] Fase 12 — Testes e documentação
+- [x] Fase 11 — Configurações editáveis pela tela
+- [x] Fase 12 — Testes, Docker e documentação

@@ -57,5 +57,10 @@ export const routes: Routes = [
     title: 'Relatório · NetWatch',
     loadComponent: () => import('./features/reports/report-view').then((m) => m.ReportViewPage),
   },
+  {
+    path: 'settings',
+    title: 'Configurações · NetWatch',
+    loadComponent: () => import('./features/settings/settings').then((m) => m.Settings),
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];

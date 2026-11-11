@@ -18,21 +18,22 @@ class TrafficRetention {
 
     private final TrafficFlowRepository flows;
     private final TrafficMinuteStatRepository stats;
-    private final CaptureProperties properties;
+    private final com.netwatch.netwatch_api.settings.SettingsService settings;
     private final Clock clock;
 
-    TrafficRetention(TrafficFlowRepository flows, TrafficMinuteStatRepository stats, CaptureProperties properties,
-            Clock clock) {
+    TrafficRetention(TrafficFlowRepository flows, TrafficMinuteStatRepository stats,
+            com.netwatch.netwatch_api.settings.SettingsService settings, Clock clock) {
         this.flows = flows;
         this.stats = stats;
-        this.properties = properties;
+        this.settings = settings;
         this.clock = clock;
     }
 
     @Scheduled(initialDelayString = "PT2M", fixedDelayString = "PT1H")
     @Transactional
     public void purge() {
-        Instant cutoff = clock.instant().minus(Duration.ofDays(Math.max(1, properties.retentionDays())));
+        int days = settings.integer(com.netwatch.netwatch_api.settings.SettingKey.CAPTURE_RETENTION_DAYS);
+        Instant cutoff = clock.instant().minus(Duration.ofDays(Math.max(1, days)));
         int removedFlows = flows.deleteOlderThan(cutoff);
         int removedStats = stats.deleteOlderThan(cutoff);
         if (removedFlows > 0 || removedStats > 0) {

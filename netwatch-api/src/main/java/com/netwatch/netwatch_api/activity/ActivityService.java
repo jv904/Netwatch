@@ -45,14 +45,14 @@ public class ActivityService {
 
     private final NetworkEventRepository events;
     private final DeviceRepository devices;
-    private final ActivityProperties properties;
+    private final com.netwatch.netwatch_api.settings.SettingsService settings;
     private final Clock clock;
 
-    public ActivityService(NetworkEventRepository events, DeviceRepository devices, ActivityProperties properties,
-            Clock clock) {
+    public ActivityService(NetworkEventRepository events, DeviceRepository devices,
+            com.netwatch.netwatch_api.settings.SettingsService settings, Clock clock) {
         this.events = events;
         this.devices = devices;
-        this.properties = properties;
+        this.settings = settings;
         this.clock = clock;
     }
 
@@ -193,6 +193,7 @@ public class ActivityService {
     @Scheduled(initialDelayString = "PT3M", fixedDelayString = "PT6H")
     @Transactional
     public void purge() {
-        events.deleteOlderThan(clock.instant().minus(java.time.Duration.ofDays(Math.max(1, properties.retentionDays()))));
+        int days = settings.integer(com.netwatch.netwatch_api.settings.SettingKey.ACTIVITY_RETENTION_DAYS);
+        events.deleteOlderThan(clock.instant().minus(java.time.Duration.ofDays(Math.max(1, days))));
     }
 }

@@ -11,6 +11,7 @@ const CATEGORY_ICON: Record<EventCategory, IconName> = {
   DISCOVERY: 'radar',
   TRAFFIC: 'traffic',
   SECURITY: 'shield',
+  SYSTEM: 'settings',
 };
 
 /**

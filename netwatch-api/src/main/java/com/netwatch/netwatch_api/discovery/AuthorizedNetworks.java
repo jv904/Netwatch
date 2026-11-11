@@ -5,10 +5,14 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.netwatch.netwatch_api.common.exception.InvalidInputException;
+import com.netwatch.netwatch_api.settings.SettingKey;
+import com.netwatch.netwatch_api.settings.SettingsService;
 import com.netwatch.netwatch_api.discovery.probe.LocalInterfaces;
 import com.netwatch.netwatch_api.discovery.probe.LocalInterfaces.LocalAddress;
 
@@ -27,27 +31,43 @@ public class AuthorizedNetworks {
 
     private final DiscoveryProperties properties;
     private final LocalInterfaces localInterfaces;
+    /** Faixas configuradas (tela de Configurações ou application.yaml); vazio = detectar pelas placas de rede. */
+    private final Supplier<List<String>> configured;
 
+    @Autowired
+    public AuthorizedNetworks(DiscoveryProperties properties, LocalInterfaces localInterfaces,
+            SettingsService settings) {
+        this(properties, localInterfaces, () -> settings.cidrs(SettingKey.DISCOVERY_AUTHORIZED_NETWORKS));
+    }
+
+    /** Sem a tela de configurações (testes): usa só o application.yaml. */
     public AuthorizedNetworks(DiscoveryProperties properties, LocalInterfaces localInterfaces) {
+        this(properties, localInterfaces, properties::authorizedNetworks);
+    }
+
+    private AuthorizedNetworks(DiscoveryProperties properties, LocalInterfaces localInterfaces,
+            Supplier<List<String>> configured) {
         this.properties = properties;
         this.localInterfaces = localInterfaces;
+        this.configured = configured;
     }
 
     public record AuthorizedNetwork(Ipv4Network network, String source, boolean virtual) {
     }
 
     public List<AuthorizedNetwork> list() {
-        if (!properties.authorizedNetworks().isEmpty()) {
-            List<AuthorizedNetwork> configured = new ArrayList<>();
-            for (String cidr : properties.authorizedNetworks()) {
+        List<String> cidrs = configured.get();
+        if (!cidrs.isEmpty()) {
+            List<AuthorizedNetwork> configuredNetworks = new ArrayList<>();
+            for (String cidr : cidrs) {
                 Ipv4Network network = Ipv4Network.parse(cidr);
                 if (!network.isPrivate()) {
                     throw new IllegalStateException(
                             "netwatch.discovery.authorized-networks contém uma faixa não privada: " + cidr);
                 }
-                configured.add(new AuthorizedNetwork(network, "Configuração", false));
+                configuredNetworks.add(new AuthorizedNetwork(network, "Configuração", false));
             }
-            return configured;
+            return configuredNetworks;
         }
         return detectLocalNetworks();
     }

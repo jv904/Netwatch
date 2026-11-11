@@ -16,13 +16,19 @@ npm run build      # build de produção em dist/
 
 Se a porta 4200 estiver ocupada: `npx ng serve --port 4300`.
 
+### Imagem Docker
+
+O [`Dockerfile`](Dockerfile) gera o build de produção e o serve com nginx, que também encaminha `/api` e
+`/actuator` para a API (variável `NETWATCH_API_UPSTREAM`, padrão `api:8080`; veja
+[`nginx.conf.template`](nginx.conf.template)). Para subir tudo junto, use o `docker-compose.yml` da raiz.
+
 ## Telas
 
 | Rota | Tela |
 |---|---|
-| `/dashboard` | Indicadores, histórico de descobertas, principais fabricantes, desconhecidos recentes |
+| `/dashboard` | Indicadores, histórico de descobertas, principais fabricantes, desconhecidos recentes, atividades recentes e segurança |
 | `/devices` | Inventário com busca, filtros (situação, reconhecimento, tipo), ordenação e paginação — filtros ficam na URL |
-| `/devices/:id` | Identificação, edição (nome, tipo, observações), conhecido/desconhecido, exclusão , **verificação de portas**, **tráfego** e **histórico** |
+| `/devices/:id` | Identificação, edição (nome, tipo, observações), conhecido/desconhecido, exclusão, **alertas**, **verificação de portas**, **tráfego** e **histórico** |
 | `/discovery` | Redes autorizadas, iniciar descoberta, acompanhamento em tempo real e histórico |
 | `/ports` | Serviços mais expostos e portas de todos os dispositivos |
 | `/security` | Motor de segurança: alertas ativos, detecções recentes, regras (ligar/desligar, gravidade e parâmetros) e alertas gerados |
@@ -31,10 +37,10 @@ Se a porta 4200 estiver ocupada: `npx ng serve --port 4300`.
 | `/reports/:id` | Relatório na tela: indicadores, gráficos e tabelas, CSV por tabela e impressão (layout próprio para papel) |
 | `/activity` | Histórico de eventos com filtros, linha do tempo, eventos por tipo, horário das atividades e dispositivos mais ativos |
 | `/traffic` | Observação de tráfego (iniciar/parar): conexões ou volume no tempo, hosts e serviços mais ativos, fluxos com programa e estado, sessões |
+| `/settings` | Configurações que valem na hora (com "restaurar padrão"), preferências do navegador e informações do sistema |
 
 O item Alertas do menu mostra o número de alertas ativos (vermelho se houver crítico) e o sistema avisa quando
-surge alerta alto ou crítico. Configurações aparece como "Em breve" até a respectiva fase ser implementada —
-nenhuma tela usa dados fictícios.
+surge alerta alto ou crítico. Nenhuma tela usa dados fictícios.
 
 ## Estrutura
 
@@ -43,7 +49,7 @@ src/app/
 ├── core/       modelos da API, serviço HTTP, avisos (toasts), tratamento de erros, formatação pt-BR
 ├── layout/     menu lateral + barra superior (busca global e "Nova descoberta")
 ├── shared/     ícones, cards de indicador, chips de status, gráficos (área e barras), paginação
-└── features/   dashboard, devices, discovery, ports, traffic, activity, security, alerts, reports
+└── features/   dashboard, devices, discovery, ports, traffic, activity, security, alerts, reports, settings
 ```
 
 Componentes standalone com signals, sem zone.js e sem bibliotecas de UI. Os gráficos são SVG/HTML
