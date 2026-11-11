@@ -23,6 +23,9 @@
               <span class="nav-label">{{ item.label }}</span>
               <span class="nav-desc">{{ item.description }}</span>
             </span>
+            @if (item.link === '/alerts' && alertBadge(); as badge) {
+              <span class="badge" [class.critical]="badge.critical" [title]="badge.title">{{ badge.count }}</span>
+            }
           </a>
         } @else {
           <span class="nav-item disabled" aria-disabled="true">

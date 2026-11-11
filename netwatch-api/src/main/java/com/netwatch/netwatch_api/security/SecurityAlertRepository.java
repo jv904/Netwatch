@@ -15,6 +15,21 @@ public interface SecurityAlertRepository extends JpaRepository<SecurityAlert, UU
 
     Optional<SecurityAlert> findFirstByDedupKeyAndStatusIn(String dedupKey, Collection<AlertStatus> statuses);
 
+    /** Alerta descartado com "não alertar novamente" para o mesmo problema. */
+    Optional<SecurityAlert> findFirstByDedupKeyAndSuppressedTrue(String dedupKey);
+
+    List<SecurityAlert> findByDeviceIdAndStatusIn(UUID deviceId, Collection<AlertStatus> statuses);
+
+    Optional<SecurityAlert> findFirstByOrderByFirstSeenAtDesc();
+
+    @Query("select a.status as status, count(a) as total from SecurityAlert a group by a.status")
+    List<StatusCount> countByStatus();
+
+    interface StatusCount {
+        AlertStatus getStatus();
+        long getTotal();
+    }
+
     List<SecurityAlert> findByStatusInOrderByLastSeenAtDesc(Collection<AlertStatus> statuses, Limit limit);
 
     @Query("""

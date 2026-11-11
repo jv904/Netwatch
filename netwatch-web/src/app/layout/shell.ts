@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { catchError, filter, of, switchMap, timer } from 'rxjs';
 
+import { AlertNotifier } from '../core/alert-notifier';
 import { Api } from '../core/api';
 import { DiscoveryEvents } from '../core/discovery-events';
 import { ToastService } from '../core/toast';
@@ -37,7 +38,7 @@ export class Shell {
     { label: 'Tráfego', description: 'Captura de pacotes', icon: 'traffic', link: '/traffic' },
     { label: 'Atividades', description: 'Histórico de eventos', icon: 'activity', link: '/activity' },
     { label: 'Segurança', description: 'Regras e detecções', icon: 'shield', link: '/security' },
-    { label: 'Alertas', description: 'Gerenciar alertas', icon: 'bell' },
+    { label: 'Alertas', description: 'Tratar alertas', icon: 'bell', link: '/alerts' },
     { label: 'Relatórios', description: 'Histórico e análises', icon: 'report' },
     { label: 'Configurações', description: 'Preferências do sistema', icon: 'settings' },
   ];
@@ -47,13 +48,29 @@ export class Shell {
   protected readonly startingDiscovery = signal(false);
   protected readonly search = signal('');
 
+  private readonly notifier = inject(AlertNotifier);
+
+  /** Contador de alertas ativos no item "Alertas" (vermelho se houver crítico). */
+  protected readonly alertBadge = computed(() => {
+    const c = this.notifier.counts();
+    if (!c || c.active === 0) return null;
+    return {
+      count: c.active > 99 ? '99+' : String(c.active),
+      critical: c.critical > 0,
+      title: `${c.active} alertas ativos: ${c.critical} críticos, ${c.high} altos, ${c.medium} médios, ${c.low} baixos`,
+    };
+  });
+
   constructor() {
     timer(0, 30_000)
       .pipe(
         switchMap(() => this.api.health().pipe(catchError(() => of(false)))),
         takeUntilDestroyed(),
       )
-      .subscribe((online) => this.apiOnline.set(online));
+      .subscribe((online) => {
+        this.apiOnline.set(online);
+        if (online) this.notifier.refresh();
+      });
 
     this.router.events
       .pipe(

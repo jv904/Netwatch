@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { Router, RouterLink } from '@angular/router';
 import { catchError, combineLatest, of, switchMap, timer } from 'rxjs';
 
 import { Api } from '../../core/api';
@@ -16,13 +17,14 @@ const REFRESH_MS = 30_000;
 
 @Component({
   selector: 'app-security',
-  imports: [AlertList, BarChart, Icon, KpiCard, Paginator, RuleCard],
+  imports: [AlertList, BarChart, Icon, KpiCard, Paginator, RouterLink, RuleCard],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './security.html',
   styleUrl: './security.scss',
 })
 export class Security {
   private readonly api = inject(Api);
+  private readonly router = inject(Router);
 
   protected readonly summary = signal<SecuritySummary | null>(null);
   protected readonly rules = signal<SecurityRule[] | null>(null);
@@ -79,6 +81,10 @@ export class Security {
   protected onSaved(updated: SecurityRule): void {
     this.rules.update((list) => (list ?? []).map((r) => (r.code === updated.code ? updated : r)));
     this.api.securitySummary().subscribe((s) => this.summary.set(s));
+  }
+
+  protected openAlert(alert: SecurityAlert): void {
+    void this.router.navigate(['/alerts'], { queryParams: { id: alert.id, tab: 'all' } });
   }
 
   protected filterByRule(item: BarItem): void {

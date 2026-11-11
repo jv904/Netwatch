@@ -1,0 +1,93 @@
+<div class="page-header">
+  <div>
+    <h1>Alertas</h1>
+    <p>Trate o que o motor de segurança encontrou: reconheça, resolva ou descarte. Cada ação fica registrada na linha do tempo do alerta.</p>
+  </div>
+  <span class="spacer"></span>
+  <label class="notify" title="Mostra uma notificação do navegador quando surgir alerta alto ou crítico">
+    <input type="checkbox" [checked]="notifier.browserNotifications()" (change)="toggleNotifications($event)" />
+    <span>Notificações do navegador</span>
+  </label>
+</div>
+
+<div class="tabs" role="tablist" aria-label="Situação dos alertas">
+  @for (t of tabs(); track t.value) {
+    <button type="button" role="tab" [class.active]="tab() === t.value" [attr.aria-selected]="tab() === t.value" (click)="setTab(t.value)">
+      {{ t.label }}
+      @if (t.count !== undefined) {
+        <span class="count nums">{{ t.count }}</span>
+      }
+    </button>
+  }
+</div>
+
+<div class="layout" [class.with-detail]="!!openId()">
+  <section class="card list-card">
+    <div class="filters">
+      <select class="select" aria-label="Gravidade" [value]="severity()" (change)="setSeverity($any($event.target).value)">
+        <option value="">Qualquer gravidade</option>
+        @for (s of severities; track s) {
+          <option [value]="s" [selected]="s === severity()">{{ severityLabel[s] }}</option>
+        }
+      </select>
+      <select class="select" aria-label="Regra" [value]="rule()" (change)="setRule($any($event.target).value)">
+        <option value="">Todas as regras</option>
+        @for (r of rules(); track r.code) {
+          <option [value]="r.code" [selected]="r.code === rule()">{{ r.title }}</option>
+        }
+      </select>
+      <input class="input" type="search" placeholder="Buscar por IP, título ou evidência…" aria-label="Buscar alertas"
+        [value]="search()" (input)="setSearch($any($event.target).value)" />
+      @if (hasFilters()) {
+        <button class="btn btn-ghost btn-sm" type="button" (click)="clearFilters()">Limpar</button>
+      }
+      <button class="btn btn-ghost btn-sm" type="button" (click)="refresh()" title="Atualizar">
+        <app-icon name="refresh" [size]="14" />
+      </button>
+    </div>
+
+    @if (result(); as r) {
+      @if (r.content.length) {
+        <div class="bulk" [class.has-selection]="selected().length > 0">
+          <label class="select-all">
+            <input type="checkbox" [checked]="allSelected()" (change)="toggleAll()" aria-label="Selecionar todos desta página" />
+            @if (selected().length) {
+              <span>{{ selected().length }} selecionados</span>
+            } @else {
+              <span class="muted">Selecionar todos</span>
+            }
+          </label>
+          @if (selected().length) {
+            <span class="spacer"></span>
+            <button class="btn btn-sm" type="button" (click)="bulk('ACKNOWLEDGE')" [disabled]="busy()">Reconhecer</button>
+            <button class="btn btn-primary btn-sm" type="button" (click)="bulk('RESOLVE')" [disabled]="busy()">Resolver</button>
+            <button class="btn btn-ghost btn-sm" type="button" (click)="bulkDismissing.set(true)" [disabled]="busy()">Descartar…</button>
+          }
+        </div>
+      }
+      <app-alert-list
+        [alerts]="r.content"
+        [showStatus]="true"
+        [showRecommendation]="false"
+        [clickable]="true"
+        [selectable]="true"
+        [selected]="selected()"
+        [activeId]="openId()"
+        (open)="open($event)"
+        (toggle)="toggle($event)"
+        [emptyText]="tab() === 'active' && !hasFilters() ? 'Nenhum alerta ativo. Tudo tranquilo por aqui.' : 'Nenhum alerta com esses filtros.'"
+      />
+      <app-paginator [page]="r.page" [size]="r.size" [total]="r.totalElements" (pageChange)="page.set($event)" />
+    } @else {
+      <div class="skeleton" style="height: 320px"></div>
+    }
+  </section>
+
+  @if (openId(); as id) {
+    <app-alert-detail [alertId]="id" (changed)="refresh()" (closed)="closeDetail()" />
+  }
+</div>
+
+@if (bulkDismissing()) {
+  <app-dismiss-dialog [count]="selected().length" [busy]="busy()" (confirm)="bulk('DISMISS', $event)" (cancel)="bulkDismissing.set(false)" />
+}

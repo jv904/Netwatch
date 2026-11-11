@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
-/** Ícones de traço (24×24), desenhados aqui para não depender de bibliotecas. */
+/** Ícones de traço (24×24), desenhados aqui para não depender de bibliotecas. Novos ícones entram neste mapa. */
 const ICONS = {
   dashboard:
     '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',

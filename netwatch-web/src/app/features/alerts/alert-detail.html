@@ -1,0 +1,122 @@
+<aside class="panel card" aria-label="Detalhe do alerta">
+  <div class="panel-head">
+    <h2>Alerta</h2>
+    <span class="spacer"></span>
+    <button class="btn btn-ghost btn-sm" type="button" (click)="closed.emit()" aria-label="Fechar detalhe">
+      <app-icon name="x" [size]="14" />
+    </button>
+  </div>
+
+  @if (notFound()) {
+    <div class="empty"><strong>Alerta não encontrado</strong>Ele pode ter sido removido.</div>
+  } @else if (detail(); as d) {
+    @let a = d.alert;
+    <div class="title-row">
+      <app-alert-severity [severity]="a.severity" />
+      <span class="status" [class]="a.status.toLowerCase()">{{ statusLabel[a.status] }}</span>
+      @if (a.suppressed) {
+        <span class="chip" title="Novas ocorrências não abrem alerta">Não alertar novamente</span>
+      }
+    </div>
+    <h3>{{ a.title }}</h3>
+
+    <dl class="kv">
+      <dt>Regra</dt>
+      <dd>{{ a.ruleTitle }}</dd>
+      @if (a.deviceId && a.deviceName) {
+        <dt>Dispositivo</dt>
+        <dd><a class="link" [routerLink]="['/devices', a.deviceId]">{{ a.deviceName }}</a> <span class="mono muted">{{ a.ipAddress }}</span></dd>
+      } @else if (a.ipAddress) {
+        <dt>Endereço</dt>
+        <dd class="mono">{{ a.ipAddress }}</dd>
+      }
+      <dt>Primeira vez</dt>
+      <dd>{{ formatDateTime(a.firstSeenAt) }}</dd>
+      <dt>Última vez</dt>
+      <dd>{{ formatDateTime(a.lastSeenAt) }} · {{ a.occurrences }} {{ a.occurrences === 1 ? 'ocorrência' : 'ocorrências' }}</dd>
+      @if (a.dismissReason) {
+        <dt>Motivo</dt>
+        <dd>{{ reasonLabel[a.dismissReason] }}</dd>
+      }
+      @if (a.resolutionNote) {
+        <dt>Observação</dt>
+        <dd>{{ a.resolutionNote }}</dd>
+      }
+    </dl>
+
+    @if (a.evidence) {
+      <section class="block">
+        <h4>Evidência</h4>
+        <p>{{ a.evidence }}</p>
+      </section>
+    }
+    <section class="block recommendation">
+      <h4>O que fazer</h4>
+      <p>{{ a.recommendation }}</p>
+    </section>
+
+    <section class="block">
+      <label class="field">
+        <span>Observação da ação (opcional)</span>
+        <input class="input" maxlength="2000" [value]="note()" (input)="note.set($any($event.target).value)" placeholder="Ex.: porta fechada no firewall" />
+      </label>
+      <div class="actions">
+        @if (a.status === 'OPEN') {
+          <button class="btn btn-sm" type="button" (click)="acknowledge()" [disabled]="busy()">Reconhecer</button>
+        }
+        @if (isActive()) {
+          <button class="btn btn-primary btn-sm" type="button" (click)="resolve()" [disabled]="busy()">
+            <app-icon name="check" [size]="14" /> Resolver
+          </button>
+          <button class="btn btn-ghost btn-sm" type="button" (click)="dismissing.set(true)" [disabled]="busy()">Descartar…</button>
+        } @else {
+          <button class="btn btn-sm" type="button" (click)="reopen()" [disabled]="busy()">
+            <app-icon name="refresh" [size]="14" /> Reabrir
+          </button>
+        }
+      </div>
+    </section>
+
+    <section class="block">
+      <h4>Linha do tempo</h4>
+      <ol class="timeline">
+        <li>
+          <span class="dot raised"></span>
+          <div>
+            <div>Alerta aberto pelo motor de segurança</div>
+            <div class="when">{{ formatDateTime(a.firstSeenAt) }}</div>
+          </div>
+        </li>
+        @for (n of d.timeline; track n.id) {
+          <li>
+            <span class="dot" [class]="n.kind === 'COMMENT' ? 'comment' : (n.toStatus ?? '').toLowerCase()"></span>
+            <div>
+              @if (n.kind === 'COMMENT') {
+                <div class="comment">{{ n.text }}</div>
+              } @else {
+                <div>
+                  {{ n.fromStatus ? statusLabel[n.fromStatus] : '' }} → <strong>{{ n.toStatus ? statusLabel[n.toStatus] : '' }}</strong>
+                </div>
+                @if (n.text) {
+                  <div class="note">{{ n.text }}</div>
+                }
+              }
+              <div class="when" [title]="formatDateTime(n.createdAt)">{{ timeAgo(n.createdAt) }}</div>
+            </div>
+          </li>
+        }
+      </ol>
+      <div class="comment-box">
+        <textarea class="textarea" maxlength="2000" placeholder="Escreva um comentário…" aria-label="Comentário"
+          [value]="comment()" (input)="comment.set($any($event.target).value)"></textarea>
+        <button class="btn btn-sm" type="button" (click)="addComment()" [disabled]="busy() || !comment().trim()">Comentar</button>
+      </div>
+    </section>
+  } @else {
+    <div class="skeleton" style="height: 320px"></div>
+  }
+</aside>
+
+@if (dismissing()) {
+  <app-dismiss-dialog [busy]="busy()" (confirm)="dismiss($event)" (cancel)="dismissing.set(false)" />
+}

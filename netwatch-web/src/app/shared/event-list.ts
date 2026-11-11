@@ -10,6 +10,7 @@ const CATEGORY_ICON: Record<EventCategory, IconName> = {
   PORT: 'ports',
   DISCOVERY: 'radar',
   TRAFFIC: 'traffic',
+  SECURITY: 'shield',
 };
 
 /**

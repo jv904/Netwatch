@@ -3,6 +3,11 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 
 import {
+  AlertCounts,
+  AlertDetail,
+  BulkAlertAction,
+  BulkAlertResult,
+  DismissReason,
   AlertQuery,
   SecurityAlert,
   SecurityRule,
@@ -215,9 +220,55 @@ export class Api {
   securityAlerts(query: AlertQuery): Observable<Page<SecurityAlert>> {
     let params = new HttpParams().set('page', query.page ?? 0).set('size', query.size ?? 25);
     if (query.status) params = params.set('status', query.status);
+    if (query.state) params = params.set('state', query.state);
     if (query.severity) params = params.set('severity', query.severity);
     if (query.rule) params = params.set('rule', query.rule);
     if (query.deviceId) params = params.set('deviceId', query.deviceId);
+    if (query.q?.trim()) params = params.set('q', query.q.trim());
     return this.http.get<Page<SecurityAlert>>('/api/security/alerts', { params });
+  }
+
+  // ---------- Alertas (gerenciamento) ----------
+
+  alertCounts(): Observable<AlertCounts> {
+    return this.http.get<AlertCounts>('/api/security/alerts/counts');
+  }
+
+  alertDetail(id: string): Observable<AlertDetail> {
+    return this.http.get<AlertDetail>(`/api/security/alerts/${id}`);
+  }
+
+  acknowledgeAlert(id: string, note?: string): Observable<AlertDetail> {
+    return this.http.post<AlertDetail>(`/api/security/alerts/${id}/acknowledge`, { note: note || null });
+  }
+
+  resolveAlert(id: string, note?: string): Observable<AlertDetail> {
+    return this.http.post<AlertDetail>(`/api/security/alerts/${id}/resolve`, { note: note || null });
+  }
+
+  dismissAlert(id: string, reason: DismissReason, note: string, suppress: boolean): Observable<AlertDetail> {
+    return this.http.post<AlertDetail>(`/api/security/alerts/${id}/dismiss`, { reason, note: note || null, suppress });
+  }
+
+  reopenAlert(id: string, note?: string): Observable<AlertDetail> {
+    return this.http.post<AlertDetail>(`/api/security/alerts/${id}/reopen`, { note: note || null });
+  }
+
+  commentAlert(id: string, text: string): Observable<AlertDetail> {
+    return this.http.post<AlertDetail>(`/api/security/alerts/${id}/comments`, { text });
+  }
+
+  bulkAlerts(
+    ids: string[],
+    action: BulkAlertAction,
+    options: { note?: string; reason?: DismissReason; suppress?: boolean } = {},
+  ): Observable<BulkAlertResult> {
+    return this.http.post<BulkAlertResult>('/api/security/alerts/bulk', {
+      ids,
+      action,
+      note: options.note || null,
+      reason: options.reason ?? null,
+      suppress: options.suppress ?? false,
+    });
   }
 }

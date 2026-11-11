@@ -189,7 +189,33 @@ Regras avaliam os eventos (depois que a operação que os gerou é gravada) e o 
 | GET | `/api/security/alerts` | Alertas. Filtros: `status`, `severity`, `rule`, `deviceId` |
 | GET | `/api/security/summary` | Alertas ativos por gravidade e por regra, e os mais recentes |
 
-Cada alerta traz a evidência e a recomendação da regra. Reconhecer, resolver e descartar alertas é a Fase 8.
+Cada alerta traz a evidência e a recomendação da regra.
+
+## API — Gerenciamento de alertas
+
+Ciclo de vida: **aberto → reconhecido → resolvido**, ou **descartado** (falso positivo, risco aceito, outro motivo).
+Resolvidos e descartados podem ser **reabertos**. Toda mudança e todo comentário ficam na linha do tempo do alerta,
+e abrir, resolver e descartar também aparecem no histórico de atividades (categoria Segurança).
+
+- **Não alertar novamente:** um alerta descartado com `suppress` absorve as novas ocorrências do mesmo problema
+  (só soma em `occurrences`), em vez de abrir alerta novo.
+- **Resolução automática:** reconhecer o dispositivo resolve "Dispositivo desconhecido"; uma porta que deixa de
+  aceitar conexões resolve "Serviço de risco" e "Porta nova" daquela porta; remover o dispositivo resolve os
+  alertas dele.
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/api/security/alerts` | Filtros: `status`, `state` (`active` = abertos + reconhecidos, `closed`), `severity`, `rule`, `deviceId`, `q` |
+| GET | `/api/security/alerts/counts` | Totais por situação, ativos por gravidade e `lastRaisedAt` (contador do menu e avisos) |
+| GET | `/api/security/alerts/{id}` | Alerta e linha do tempo |
+| POST | `/api/security/alerts/{id}/acknowledge` | `{"note":"..."}` opcional |
+| POST | `/api/security/alerts/{id}/resolve` | `{"note":"..."}` opcional |
+| POST | `/api/security/alerts/{id}/dismiss` | `{"reason":"FALSE_POSITIVE","note":"...","suppress":true}` |
+| POST | `/api/security/alerts/{id}/reopen` | `{"note":"..."}` opcional |
+| POST | `/api/security/alerts/{id}/comments` | `{"text":"..."}` → 201 |
+| POST | `/api/security/alerts/bulk` | `{"ids":[...],"action":"ACKNOWLEDGE|RESOLVE|DISMISS","note":"...","reason":"...","suppress":false}` → quantos mudaram e quantos foram ignorados |
+
+Uma ação que a situação atual não permite (ex.: resolver um alerta já resolvido) responde **409**.
 
 ## API — Dashboard
 
@@ -206,11 +232,11 @@ A interface Angular fica em [`../netwatch-web`](../netwatch-web).
 - [x] Fase 2 — Cadastro e gerenciamento de dispositivos
 - [x] Fase 3 — Descoberta de dispositivos
 - [x] Fase 4 — Verificação de portas
-- [x] Fase 9 (parcial) — Interface Angular para as fases 1–7 (cada fase nova já entra com sua tela)
+- [x] Fase 9 (parcial) — Interface Angular para as fases 1–8 (cada fase nova já entra com sua tela)
 - [x] Fase 5 — Tráfego: tabela de conexões (sem driver) ou captura de pacotes (Npcap/libpcap)
 - [x] Fase 6 — Análise de atividades / histórico de eventos
 - [x] Fase 7 — Motor de segurança
-- [ ] Fase 8 — Alertas
+- [x] Fase 8 — Alertas
 - [ ] Fase 10 — Relatórios
 - [ ] Fase 11 — Configurações
 - [ ] Fase 12 — Testes e documentação

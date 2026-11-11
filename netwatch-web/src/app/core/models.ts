@@ -1,4 +1,4 @@
-/** Tipos espelhando os contratos da NetWatch API. */
+/** Tipos espelhando os contratos da NetWatch API (um bloco por módulo, na ordem das fases). */
 
 export interface Page<T> {
   content: T[];
@@ -294,7 +294,7 @@ export interface DeviceTraffic {
 // ---------- Atividades (histórico de eventos) ----------
 
 export type EventSeverity = 'INFO' | 'NOTICE' | 'WARNING';
-export type EventCategory = 'DEVICE' | 'PORT' | 'DISCOVERY' | 'TRAFFIC';
+export type EventCategory = 'DEVICE' | 'PORT' | 'DISCOVERY' | 'TRAFFIC' | 'SECURITY';
 export type EventType =
   | 'DEVICE_DISCOVERED'
   | 'DEVICE_IP_CHANGED'
@@ -314,7 +314,10 @@ export type EventType =
   | 'CAPTURE_STARTED'
   | 'CAPTURE_FINISHED'
   | 'CAPTURE_FAILED'
-  | 'TRAFFIC_NEW_SERVICE';
+  | 'TRAFFIC_NEW_SERVICE'
+  | 'ALERT_RAISED'
+  | 'ALERT_RESOLVED'
+  | 'ALERT_DISMISSED';
 export type ActivityWindow = '24h' | '7d' | '30d';
 
 export interface NetworkEvent {
@@ -411,15 +414,58 @@ export interface SecurityAlert {
   occurrences: number;
   firstSeenAt: string;
   lastSeenAt: string;
+  statusChangedAt: string | null;
+  resolutionNote: string | null;
+  dismissReason: DismissReason | null;
+  suppressed: boolean;
 }
+
+export type DismissReason = 'FALSE_POSITIVE' | 'ACCEPTED_RISK' | 'OTHER';
+export type AlertState = 'active' | 'closed';
+export type BulkAlertAction = 'ACKNOWLEDGE' | 'RESOLVE' | 'DISMISS';
 
 export interface AlertQuery {
   status?: AlertStatus | '';
+  /** Atalho: active = abertos + reconhecidos; closed = resolvidos + descartados. */
+  state?: AlertState | '';
   severity?: AlertSeverity | '';
   rule?: string;
   deviceId?: string;
+  q?: string;
   page?: number;
   size?: number;
+}
+
+export interface AlertNote {
+  id: string;
+  createdAt: string;
+  kind: 'COMMENT' | 'STATUS';
+  fromStatus: AlertStatus | null;
+  toStatus: AlertStatus | null;
+  text: string | null;
+}
+
+export interface AlertDetail {
+  alert: SecurityAlert;
+  timeline: AlertNote[];
+}
+
+export interface AlertCounts {
+  active: number;
+  open: number;
+  acknowledged: number;
+  resolved: number;
+  dismissed: number;
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+  lastRaisedAt: string | null;
+}
+
+export interface BulkAlertResult {
+  changed: number;
+  skipped: number;
 }
 
 export interface SecuritySummary {

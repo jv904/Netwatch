@@ -116,4 +116,32 @@ describe('Api', () => {
     expect(req.request.params.has('rule')).toBe(false);
     expect(req.request.params.get('page')).toBe('1');
   });
+
+  it('trata alertas: ações individuais, descarte e lote', () => {
+    api.acknowledgeAlert('a1').subscribe();
+    const ack = http.expectOne('/api/security/alerts/a1/acknowledge');
+    expect(ack.request.method).toBe('POST');
+    expect(ack.request.body).toEqual({ note: null });
+
+    api.dismissAlert('a1', 'ACCEPTED_RISK', 'compartilhamento necessário', true).subscribe();
+    expect(http.expectOne('/api/security/alerts/a1/dismiss').request.body).toEqual({
+      reason: 'ACCEPTED_RISK',
+      note: 'compartilhamento necessário',
+      suppress: true,
+    });
+
+    api.bulkAlerts(['a1', 'a2'], 'RESOLVE', { note: 'feito' }).subscribe();
+    expect(http.expectOne('/api/security/alerts/bulk').request.body).toEqual({
+      ids: ['a1', 'a2'],
+      action: 'RESOLVE',
+      note: 'feito',
+      reason: null,
+      suppress: false,
+    });
+
+    api.securityAlerts({ state: 'active', q: ' 192.168.0.5 ' }).subscribe();
+    const list = http.expectOne((r) => r.url === '/api/security/alerts');
+    expect(list.request.params.get('state')).toBe('active');
+    expect(list.request.params.get('q')).toBe('192.168.0.5');
+  });
 });

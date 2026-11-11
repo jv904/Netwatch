@@ -37,7 +37,7 @@
       <h2><app-icon name="bell" [size]="16" /> Detecções recentes</h2>
     </div>
     @if (summary(); as s) {
-      <app-alert-list [alerts]="s.recent" emptyText="Nenhum alerta ativo. O motor avalia cada evento novo e o tráfego a cada minuto." />
+      <app-alert-list [alerts]="s.recent" [clickable]="true" (open)="openAlert($event)" emptyText="Nenhum alerta ativo. O motor avalia cada evento novo e o tráfego a cada minuto." />
     } @else {
       <div class="skeleton" style="height: 220px"></div>
     }
@@ -102,10 +102,11 @@
         <option [value]="r.code" [selected]="r.code === ruleFilter()">{{ r.title }}</option>
       }
     </select>
-    <span class="muted small">Reconhecer, resolver e descartar alertas chega na próxima fase (gerenciamento de alertas).</span>
+    <span class="spacer"></span>
+    <a class="btn btn-sm" routerLink="/alerts">Tratar alertas</a>
   </div>
   @if (alerts(); as p) {
-    <app-alert-list [alerts]="p.content" [showStatus]="true" emptyText="Nenhum alerta com esses filtros." />
+    <app-alert-list [alerts]="p.content" [showStatus]="true" [clickable]="true" (open)="openAlert($event)" emptyText="Nenhum alerta com esses filtros." />
     <app-paginator [page]="p.page" [size]="p.size" [total]="p.totalElements" (pageChange)="page.set($event)" />
   } @else {
     <div class="skeleton" style="height: 200px"></div>

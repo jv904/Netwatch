@@ -9,6 +9,7 @@ import {
   PortState,
   RuleCategory,
   RunStatus,
+  DismissReason,
 } from './models';
 
 export const DEVICE_TYPES: { value: DeviceType; label: string }[] = [
@@ -123,6 +124,7 @@ export const EVENT_CATEGORY_LABEL: Record<EventCategory, string> = {
   PORT: 'Portas',
   DISCOVERY: 'Descoberta',
   TRAFFIC: 'Tráfego',
+  SECURITY: 'Segurança',
 };
 
 export const EVENT_TYPE_LABEL: Record<EventType, string> = {
@@ -145,6 +147,9 @@ export const EVENT_TYPE_LABEL: Record<EventType, string> = {
   CAPTURE_FINISHED: 'Captura encerrada',
   CAPTURE_FAILED: 'Falha na captura',
   TRAFFIC_NEW_SERVICE: 'Novo serviço no tráfego',
+  ALERT_RAISED: 'Alerta aberto',
+  ALERT_RESOLVED: 'Alerta resolvido',
+  ALERT_DISMISSED: 'Alerta descartado',
 };
 
 export const ALERT_SEVERITY_LABEL: Record<AlertSeverity, string> = {
@@ -152,6 +157,12 @@ export const ALERT_SEVERITY_LABEL: Record<AlertSeverity, string> = {
   MEDIUM: 'Média',
   HIGH: 'Alta',
   CRITICAL: 'Crítica',
+};
+
+export const DISMISS_REASON_LABEL: Record<DismissReason, string> = {
+  FALSE_POSITIVE: 'Falso positivo',
+  ACCEPTED_RISK: 'Risco aceito',
+  OTHER: 'Outro motivo',
 };
 
 export const ALERT_STATUS_LABEL: Record<AlertStatus, string> = {

@@ -24,6 +24,8 @@ import com.netwatch.netwatch_api.device.DeviceObservation;
 import com.netwatch.netwatch_api.device.DeviceRepository;
 import com.netwatch.netwatch_api.device.DeviceService;
 import com.netwatch.netwatch_api.device.dto.CreateDeviceRequest;
+import com.netwatch.netwatch_api.security.RuleType;
+import com.netwatch.netwatch_api.security.SecurityRuleService;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -42,11 +44,31 @@ class ActivityControllerTest {
     @Autowired
     NetworkEventRepository events;
 
+    @Autowired
+    SecurityRuleService securityRules;
+
+    /** Motor de segurança desligado: aqui só interessam os eventos de dispositivos, não os de alertas. */
     @BeforeEach
+    void setUp() {
+        clean();
+        setSecurityRules(false);
+    }
+
     @AfterEach
+    void tearDown() {
+        clean();
+        setSecurityRules(true);
+    }
+
     void clean() {
         events.deleteAll();
         devices.deleteAll();
+    }
+
+    void setSecurityRules(boolean enabled) {
+        for (RuleType type : RuleType.values()) {
+            securityRules.update(type, enabled, type.defaultSeverity(), java.util.Map.of());
+        }
     }
 
     @Test

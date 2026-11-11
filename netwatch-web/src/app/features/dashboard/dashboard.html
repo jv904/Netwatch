@@ -167,10 +167,10 @@
       </span>
     }
     <span class="spacer"></span>
-    <a class="btn btn-sm" routerLink="/security">Abrir motor de segurança</a>
+    <a class="btn btn-sm" routerLink="/alerts">Tratar alertas</a>
   </div>
   @if (security(); as s) {
-    <app-alert-list [alerts]="s.recent.slice(0, 3)" [showRecommendation]="false" emptyText="Nenhum alerta ativo." />
+    <app-alert-list [alerts]="s.recent.slice(0, 3)" [showRecommendation]="false" [clickable]="true" (open)="openAlert($event)" emptyText="Nenhum alerta ativo." />
   } @else {
     <div class="skeleton" style="height: 120px"></div>
   }

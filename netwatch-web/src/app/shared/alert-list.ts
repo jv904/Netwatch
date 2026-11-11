@@ -1,11 +1,14 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { ALERT_STATUS_LABEL, formatDateTime, timeAgo } from '../core/format';
+import { ALERT_STATUS_LABEL, DISMISS_REASON_LABEL, formatDateTime, timeAgo } from '../core/format';
 import { SecurityAlert } from '../core/models';
 import { AlertSeverityChip } from './chips';
 
-/** Lista de alertas: gravidade, o que foi detectado, evidência, recomendação e dispositivo envolvido. */
+/**
+ * Lista de alertas: gravidade, o que foi detectado, evidência, recomendação e dispositivo envolvido.
+ * Opcionalmente com caixas de seleção (ações em lote) e clique para abrir o detalhe.
+ */
 @Component({
   selector: 'app-alert-list',
   imports: [AlertSeverityChip, RouterLink],
@@ -16,10 +19,23 @@ import { AlertSeverityChip } from './chips';
     } @else {
       <ul class="alerts" [attr.aria-label]="ariaLabel()">
         @for (a of alerts(); track a.id) {
-          <li class="alert" [class]="a.severity.toLowerCase()">
+          <li class="alert" [class]="a.severity.toLowerCase()" [class.active]="a.id === activeId()" [class.closed]="a.status === 'RESOLVED' || a.status === 'DISMISSED'">
             <div class="head">
+              @if (selectable()) {
+                <input
+                  type="checkbox"
+                  class="check"
+                  [checked]="selected().includes(a.id)"
+                  (change)="toggle.emit(a.id)"
+                  [attr.aria-label]="'Selecionar alerta ' + a.title"
+                />
+              }
               <app-alert-severity [severity]="a.severity" />
-              <span class="title">{{ a.title }}</span>
+              @if (clickable()) {
+                <button type="button" class="title as-link" (click)="open.emit(a)">{{ a.title }}</button>
+              } @else {
+                <span class="title">{{ a.title }}</span>
+              }
             </div>
             @if (a.evidence) {
               <div class="evidence">{{ a.evidence }}</div>
@@ -34,7 +50,9 @@ import { AlertSeverityChip } from './chips';
               }
               @if (showStatus()) {
                 <span>·</span>
-                <span>{{ statusLabel[a.status] }}</span>
+                <span class="status" [class]="a.status.toLowerCase()">
+                  {{ statusLabel[a.status] }}{{ a.dismissReason ? ' (' + reasonLabel[a.dismissReason] + ')' : '' }}
+                </span>
               }
               @if (a.deviceId && a.deviceName) {
                 <span>·</span>
@@ -58,10 +76,18 @@ import { AlertSeverityChip } from './chips';
     .alert.medium { border-left-color: var(--warning); }
     .alert.high { border-left-color: var(--serious); }
     .alert.critical { border-left-color: var(--critical); }
+    .alert.active { outline: 1px solid var(--accent); background: var(--surface-3); }
+    .alert.closed .title { color: var(--text-secondary); }
     .head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .check { accent-color: var(--accent); width: 15px; height: 15px; margin: 0; cursor: pointer; }
     .title { color: var(--text-primary); overflow-wrap: anywhere; }
+    .as-link { background: none; border: 0; padding: 0; font: inherit; text-align: left; cursor: pointer; }
+    .as-link:hover, .as-link:focus-visible { color: var(--accent); text-decoration: underline; }
     .evidence { color: var(--text-secondary); font-size: 12.5px; margin-top: 4px; overflow-wrap: anywhere; }
     .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: 12px; color: var(--text-muted); }
+    .status.open { color: var(--warning); }
+    .status.acknowledged { color: var(--accent); }
+    .status.resolved { color: var(--good); }
     details { margin-top: 6px; font-size: 12.5px; color: var(--text-secondary); }
     summary { cursor: pointer; color: var(--accent); width: fit-content; }
     details p { margin: 6px 0 0; }
@@ -75,8 +101,19 @@ export class AlertList {
   readonly showRecommendation = input(true);
   readonly emptyText = input('Nenhum alerta.');
   readonly ariaLabel = input('Alertas');
+  /** O título vira botão que emite {@link open}. */
+  readonly clickable = input(false);
+  /** Mostra caixas de seleção; os marcados vêm em {@link selected}. */
+  readonly selectable = input(false);
+  readonly selected = input<string[]>([]);
+  /** Alerta aberto no painel de detalhe (destacado na lista). */
+  readonly activeId = input<string | null>(null);
+
+  readonly open = output<SecurityAlert>();
+  readonly toggle = output<string>();
 
   protected readonly statusLabel = ALERT_STATUS_LABEL;
+  protected readonly reasonLabel = DISMISS_REASON_LABEL;
   protected readonly timeAgo = timeAgo;
   protected readonly formatDateTime = formatDateTime;
 }

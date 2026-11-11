@@ -3,6 +3,7 @@ package com.netwatch.netwatch_api.activity;
 import static com.netwatch.netwatch_api.activity.EventCategory.DEVICE;
 import static com.netwatch.netwatch_api.activity.EventCategory.DISCOVERY;
 import static com.netwatch.netwatch_api.activity.EventCategory.PORT;
+import static com.netwatch.netwatch_api.activity.EventCategory.SECURITY;
 import static com.netwatch.netwatch_api.activity.EventCategory.TRAFFIC;
 import static com.netwatch.netwatch_api.activity.EventSeverity.INFO;
 import static com.netwatch.netwatch_api.activity.EventSeverity.NOTICE;
@@ -40,7 +41,12 @@ public enum EventType {
     CAPTURE_FINISHED(TRAFFIC, INFO),
     CAPTURE_FAILED(TRAFFIC, NOTICE),
     /** Um dispositivo da rede foi visto oferecendo um serviço pela primeira vez no tráfego. */
-    TRAFFIC_NEW_SERVICE(TRAFFIC, NOTICE);
+    TRAFFIC_NEW_SERVICE(TRAFFIC, NOTICE),
+
+    /** O motor de segurança abriu um alerta novo. */
+    ALERT_RAISED(SECURITY, WARNING),
+    ALERT_RESOLVED(SECURITY, INFO),
+    ALERT_DISMISSED(SECURITY, INFO);
 
     private final EventCategory category;
     private final EventSeverity severity;

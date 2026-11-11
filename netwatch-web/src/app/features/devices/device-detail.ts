@@ -8,12 +8,13 @@ import { ToastService } from '../../core/toast';
 import { DeviceStatusChip } from '../../shared/chips';
 import { Icon } from '../../shared/icon';
 import { DevicePortsPanel } from './device-ports';
+import { DeviceAlertsPanel } from './device-alerts';
 import { DeviceEventsPanel } from './device-events';
 import { DeviceTrafficPanel } from './device-traffic';
 
 @Component({
   selector: 'app-device-detail',
-  imports: [RouterLink, DeviceStatusChip, Icon, DevicePortsPanel, DeviceTrafficPanel, DeviceEventsPanel],
+  imports: [RouterLink, DeviceStatusChip, Icon, DeviceAlertsPanel, DevicePortsPanel, DeviceTrafficPanel, DeviceEventsPanel],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './device-detail.html',
   styleUrl: './device-detail.scss',

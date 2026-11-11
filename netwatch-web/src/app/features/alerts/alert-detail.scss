@@ -1,0 +1,152 @@
+:host {
+  display: block;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+
+  h2 {
+    margin: 0;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+  }
+}
+
+.title-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+h3 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.status {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+
+  &.open {
+    color: var(--warning);
+  }
+
+  &.acknowledged {
+    color: var(--accent);
+  }
+
+  &.resolved {
+    color: var(--good);
+  }
+}
+
+.block {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+
+  h4 {
+    margin: 0 0 6px;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 13px;
+    overflow-wrap: anywhere;
+  }
+}
+
+.recommendation p {
+  color: var(--text-secondary);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  li {
+    display: grid;
+    grid-template-columns: 12px 1fr;
+    gap: 10px;
+    font-size: 13px;
+  }
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 4px;
+  background: var(--border-strong);
+
+  &.raised,
+  &.open {
+    background: var(--warning);
+  }
+
+  &.acknowledged,
+  &.comment {
+    background: var(--accent);
+  }
+
+  &.resolved {
+    background: var(--good);
+  }
+}
+
+.comment,
+.note {
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.when {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.comment-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  align-items: flex-end;
+
+  .textarea {
+    width: 100%;
+    min-height: 64px;
+  }
+}
+
+.link {
+  color: var(--accent);
+}

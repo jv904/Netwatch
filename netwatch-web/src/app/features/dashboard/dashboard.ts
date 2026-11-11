@@ -5,7 +5,7 @@ import { catchError, of, switchMap, timer } from 'rxjs';
 
 import { Api } from '../../core/api';
 import { formatDateTime, formatDuration, formatNumber, timeAgo } from '../../core/format';
-import { DashboardOverview, Device, NetworkEvent, SecuritySummary } from '../../core/models';
+import { DashboardOverview, Device, NetworkEvent, SecurityAlert, SecuritySummary } from '../../core/models';
 import { ToastService } from '../../core/toast';
 import { AreaChart, AreaPoint } from '../../shared/area-chart';
 import { BarChart, BarItem } from '../../shared/bar-chart';
@@ -101,6 +101,10 @@ export class Dashboard {
   protected openVendor(item: BarItem): void {
     if (item.label === 'Não identificado') return;
     this.router.navigate(['/devices'], { queryParams: { q: item.label } });
+  }
+
+  protected openAlert(alert: SecurityAlert): void {
+    void this.router.navigate(['/alerts'], { queryParams: { id: alert.id, tab: 'all' } });
   }
 
   protected markKnown(device: Device, event: Event): void {

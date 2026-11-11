@@ -42,5 +42,10 @@ export const routes: Routes = [
     title: 'Segurança · NetWatch',
     loadComponent: () => import('./features/security/security').then((m) => m.Security),
   },
+  {
+    path: 'alerts',
+    title: 'Alertas · NetWatch',
+    loadComponent: () => import('./features/alerts/alerts').then((m) => m.Alerts),
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];
