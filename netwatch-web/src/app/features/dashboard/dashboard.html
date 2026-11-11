@@ -158,10 +158,20 @@
   }
 </section>
 
-<section class="card coming section">
-  <app-icon name="shield" />
-  <div>
-    <strong>Alertas</strong>
-    <p class="muted">Os alertas ativos aparecerão aqui quando o motor de segurança e o gerenciamento de alertas forem concluídos.</p>
+<section class="card section">
+  <div class="card-header">
+    <h2><app-icon name="shield" [size]="16" /> Segurança</h2>
+    @if (security(); as s) {
+      <span class="hint">
+        {{ s.activeAlerts }} alertas ativos · {{ s.critical }} críticos · {{ s.high }} altos · {{ s.medium }} médios
+      </span>
+    }
+    <span class="spacer"></span>
+    <a class="btn btn-sm" routerLink="/security">Abrir motor de segurança</a>
   </div>
+  @if (security(); as s) {
+    <app-alert-list [alerts]="s.recent.slice(0, 3)" [showRecommendation]="false" emptyText="Nenhum alerta ativo." />
+  } @else {
+    <div class="skeleton" style="height: 120px"></div>
+  }
 </section>

@@ -46,6 +46,7 @@ Detalhes de cada parte (rotas da API, configurações e telas) estão nos README
 - **Portas e serviços**: verificação de portas comuns ou específicas, com histórico e detecção de portas que passaram a aceitar conexões.
 - **Tráfego**: captura de pacotes (volume, protocolos, broadcast/multicast e equipamentos vistos no tráfego), restrita às redes autorizadas e só com metadados. **Exige o Npcap (Windows) ou a libpcap.** Sem o driver, o sistema roda em modo limitado, com as conexões desta máquina lidas da tabela do sistema. Detalhes em [docs/npcap.md](docs/npcap.md).
 - **Atividades**: histórico de tudo o que muda na rede (equipamentos novos, ausentes ou com outro IP, portas que passaram a aceitar conexões, serviços vistos no tráfego, descobertas e capturas), com linha do tempo, tipos, horários e dispositivos mais ativos.
+- **Motor de segurança**: 8 regras configuráveis (equipamento desconhecido, serviço de risco exposto, porta nova, conflito de IP/ARP spoofing, varredura, porta suspeita, acesso administrativo externo e atividade fora do horário) que geram alertas com evidência e recomendação.
 
 ## Roadmap
 
@@ -55,9 +56,9 @@ Detalhes de cada parte (rotas da API, configurações e telas) estão nos README
 - [x] 4. Verificação de portas
 - [x] 5. Captura de pacotes
 - [x] 6. Análise de atividades e histórico de eventos
-- [ ] 7. Motor de segurança
+- [x] 7. Motor de segurança
 - [ ] 8. Gerenciamento de alertas
-- [x] 9. Interface Angular (parcial: telas das fases 1 a 6; cada fase nova entra com a sua tela)
+- [x] 9. Interface Angular (parcial: telas das fases 1 a 7; cada fase nova entra com a sua tela)
 - [ ] 10. Relatórios
 - [ ] 11. Configurações
 - [ ] 12. Testes e documentação finais

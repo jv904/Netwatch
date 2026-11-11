@@ -203,11 +203,11 @@ public class PortScanService implements DisposableBean {
             if (r.isNewlyOpened()) {
                 publish(ActivityEvent.of(EventType.PORT_OPENED, scan.getDeviceId(), ip,
                         "Porta " + port + " passou a aceitar conexões em " + ip)
-                        .withDetails("Antes: " + describe(r.getPreviousState())), scan);
+                        .withDetails("Antes: " + describe(r.getPreviousState())).withPort(r.getPort()), scan);
             } else if (r.getPreviousState() == PortState.OPEN && r.getState() != PortState.OPEN) {
                 publish(ActivityEvent.of(EventType.PORT_CLOSED, scan.getDeviceId(), ip,
                         "Porta " + port + " deixou de aceitar conexões em " + ip)
-                        .withDetails("Agora: " + describe(r.getState())), scan);
+                        .withDetails("Agora: " + describe(r.getState())).withPort(r.getPort()), scan);
             }
         }
         publish(ActivityEvent.of(EventType.PORT_SCAN_COMPLETED, scan.getDeviceId(), ip,

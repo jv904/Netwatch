@@ -25,6 +25,9 @@ import com.netwatch.netwatch_api.device.dto.UpdateDeviceRequest;
 @Transactional(readOnly = true)
 public class DeviceService {
 
+    /** Dois MACs com o mesmo IP dentro desta janela indicam conflito (e não só um IP reaproveitado pelo DHCP). */
+    private static final java.time.Duration IP_CONFLICT_WINDOW = java.time.Duration.ofMinutes(30);
+
     private final DeviceRepository repository;
     private final ApplicationEventPublisher events;
     private final Clock clock;
@@ -147,6 +150,7 @@ public class DeviceService {
         Device saved = repository.save(device);
 
         String where = observation.source().description();
+        detectIpConflict(saved, now, where);
         if (created) {
             publish(EventType.DEVICE_DISCOVERED, saved, "Novo dispositivo " + label(saved) + " visto " + where,
                     describe(saved));
@@ -180,6 +184,28 @@ public class DeviceService {
             }
         }
         return count;
+    }
+
+    /**
+     * Outro equipamento (outro MAC) usou este mesmo IP há pouco tempo: IP duplicado ou alguém se passando
+     * por ele (ARP spoofing). Vira evento; o motor de segurança decide a gravidade.
+     */
+    private void detectIpConflict(Device device, Instant now, String where) {
+        if (device.getMacAddress() == null) {
+            return;
+        }
+        Instant recent = now.minus(IP_CONFLICT_WINDOW);
+        for (Device other : repository.findByIpAddress(device.getIpAddress())) {
+            if (!other.getId().equals(device.getId()) && other.getMacAddress() != null
+                    && !other.getMacAddress().equals(device.getMacAddress())
+                    && other.getLastSeenAt() != null && other.getLastSeenAt().isAfter(recent)) {
+                events.publishEvent(ActivityEvent.of(EventType.DEVICE_IP_CONFLICT, device.getId(),
+                                device.getIpAddress(), "Conflito de IP: " + device.getIpAddress()
+                                        + " visto " + where + " com o MAC " + device.getMacAddress())
+                        .withDetails("O mesmo IP pertencia a " + label(other) + ", MAC " + other.getMacAddress()
+                                + ", visto pela última vez " + other.getLastSeenAt()));
+            }
+        }
     }
 
     private void publishRecognitionChange(Device device, boolean wasRecognized) {

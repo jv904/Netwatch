@@ -3,6 +3,11 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 
 import {
+  AlertQuery,
+  SecurityAlert,
+  SecurityRule,
+  SecuritySummary,
+  UpdateRuleRequest,
   ActivitySummary,
   ActivityWindow,
   EventQuery,
@@ -191,5 +196,28 @@ export class Api {
   deviceEvents(deviceId: string, page = 0, size = 10): Observable<Page<NetworkEvent>> {
     const params = new HttpParams().set('page', page).set('size', size);
     return this.http.get<Page<NetworkEvent>>(`/api/devices/${deviceId}/events`, { params });
+  }
+
+  // ---------- Segurança ----------
+
+  securityRules(): Observable<SecurityRule[]> {
+    return this.http.get<SecurityRule[]>('/api/security/rules');
+  }
+
+  updateSecurityRule(code: string, request: UpdateRuleRequest): Observable<SecurityRule> {
+    return this.http.put<SecurityRule>(`/api/security/rules/${code}`, request);
+  }
+
+  securitySummary(): Observable<SecuritySummary> {
+    return this.http.get<SecuritySummary>('/api/security/summary');
+  }
+
+  securityAlerts(query: AlertQuery): Observable<Page<SecurityAlert>> {
+    let params = new HttpParams().set('page', query.page ?? 0).set('size', query.size ?? 25);
+    if (query.status) params = params.set('status', query.status);
+    if (query.severity) params = params.set('severity', query.severity);
+    if (query.rule) params = params.set('rule', query.rule);
+    if (query.deviceId) params = params.set('deviceId', query.deviceId);
+    return this.http.get<Page<SecurityAlert>>('/api/security/alerts', { params });
   }
 }

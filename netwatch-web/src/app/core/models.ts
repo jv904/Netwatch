@@ -298,6 +298,7 @@ export type EventCategory = 'DEVICE' | 'PORT' | 'DISCOVERY' | 'TRAFFIC';
 export type EventType =
   | 'DEVICE_DISCOVERED'
   | 'DEVICE_IP_CHANGED'
+  | 'DEVICE_IP_CONFLICT'
   | 'DEVICE_RETURNED'
   | 'DEVICE_INACTIVE'
   | 'DEVICE_CREATED'
@@ -360,4 +361,75 @@ export interface ActivitySummary {
   byType: { type: EventType; category: EventCategory; severity: EventSeverity; count: number }[];
   byHour: { hour: number; count: number }[];
   topDevices: { deviceId: string; name: string; ipAddress: string; count: number; warnings: number }[];
+}
+
+// ---------- Segurança (motor de regras e alertas) ----------
+
+export type AlertSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type AlertStatus = 'OPEN' | 'ACKNOWLEDGED' | 'RESOLVED' | 'DISMISSED';
+export type RuleCategory = 'DEVICES' | 'NETWORK' | 'TRAFFIC' | 'SCHEDULE';
+export type RuleParamType = 'INTEGER' | 'HOUR' | 'PORT_LIST' | 'IP_LIST';
+
+export interface SecurityRule {
+  code: string;
+  category: RuleCategory;
+  title: string;
+  description: string;
+  recommendation: string;
+  enabled: boolean;
+  severity: AlertSeverity;
+  defaultSeverity: AlertSeverity;
+  params: {
+    name: string;
+    label: string;
+    description: string;
+    type: RuleParamType;
+    value: string;
+    defaultValue: string;
+  }[];
+  activeAlerts: number;
+}
+
+export interface UpdateRuleRequest {
+  enabled: boolean;
+  severity: AlertSeverity;
+  params: Record<string, string>;
+}
+
+export interface SecurityAlert {
+  id: string;
+  rule: string;
+  ruleTitle: string;
+  severity: AlertSeverity;
+  status: AlertStatus;
+  title: string;
+  evidence: string | null;
+  recommendation: string;
+  deviceId: string | null;
+  deviceName: string | null;
+  ipAddress: string | null;
+  occurrences: number;
+  firstSeenAt: string;
+  lastSeenAt: string;
+}
+
+export interface AlertQuery {
+  status?: AlertStatus | '';
+  severity?: AlertSeverity | '';
+  rule?: string;
+  deviceId?: string;
+  page?: number;
+  size?: number;
+}
+
+export interface SecuritySummary {
+  activeAlerts: number;
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+  rulesEnabled: number;
+  rulesTotal: number;
+  byRule: { rule: string; title: string; activeAlerts: number }[];
+  recent: SecurityAlert[];
 }

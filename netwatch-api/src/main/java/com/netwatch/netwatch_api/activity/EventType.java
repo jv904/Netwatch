@@ -15,6 +15,8 @@ public enum EventType {
     DEVICE_DISCOVERED(DEVICE, WARNING),
     /** Equipamento conhecido apareceu com outro IP. */
     DEVICE_IP_CHANGED(DEVICE, NOTICE),
+    /** Um IP em uso por um equipamento apareceu com outro MAC (IP duplicado ou ARP spoofing). */
+    DEVICE_IP_CONFLICT(DEVICE, WARNING),
     /** Equipamento inativo voltou a ser visto. */
     DEVICE_RETURNED(DEVICE, INFO),
     /** Equipamento não respondeu na descoberta. */

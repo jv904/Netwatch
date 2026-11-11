@@ -36,7 +36,8 @@ export class Shell {
     { label: 'Portas e serviços', description: 'Exposição dos dispositivos', icon: 'ports', link: '/ports' },
     { label: 'Tráfego', description: 'Captura de pacotes', icon: 'traffic', link: '/traffic' },
     { label: 'Atividades', description: 'Histórico de eventos', icon: 'activity', link: '/activity' },
-    { label: 'Alertas', description: 'Possíveis ameaças', icon: 'bell' },
+    { label: 'Segurança', description: 'Regras e detecções', icon: 'shield', link: '/security' },
+    { label: 'Alertas', description: 'Gerenciar alertas', icon: 'bell' },
     { label: 'Relatórios', description: 'Histórico e análises', icon: 'report' },
     { label: 'Configurações', description: 'Preferências do sistema', icon: 'settings' },
   ];

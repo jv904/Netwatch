@@ -139,7 +139,7 @@ class TrafficRecorder {
         events.publishEvent(ActivityEvent.of(EventType.TRAFFIC_NEW_SERVICE, deviceId, flow.getDstIp(),
                         "Serviço " + what + " em uso em " + target)
                 .withDetails("Primeiro acesso visto no tráfego, vindo de " + flow.getSrcIp())
-                .withReference(state.sessionId));
+                .withReference(state.sessionId).withPort(port));
     }
 
     private static String label(Device device) {

@@ -25,10 +25,11 @@ Se a porta 4200 estiver ocupada: `npx ng serve --port 4300`.
 | `/devices/:id` | Identificação, edição (nome, tipo, observações), conhecido/desconhecido, exclusão , **verificação de portas**, **tráfego** e **histórico** |
 | `/discovery` | Redes autorizadas, iniciar descoberta, acompanhamento em tempo real e histórico |
 | `/ports` | Serviços mais expostos e portas de todos os dispositivos |
+| `/security` | Motor de segurança: alertas ativos, detecções recentes, regras (ligar/desligar, gravidade e parâmetros) e alertas gerados |
 | `/activity` | Histórico de eventos com filtros, linha do tempo, eventos por tipo, horário das atividades e dispositivos mais ativos |
 | `/traffic` | Observação de tráfego (iniciar/parar): conexões ou volume no tempo, hosts e serviços mais ativos, fluxos com programa e estado, sessões |
 
-Alertas, Relatórios e Configurações aparecem no menu como "Em breve" até as
+Alertas (gerenciamento), Relatórios e Configurações aparecem no menu como "Em breve" até as
 respectivas fases serem implementadas — nenhuma tela usa dados fictícios.
 
 ## Estrutura
@@ -38,7 +39,7 @@ src/app/
 ├── core/       modelos da API, serviço HTTP, avisos (toasts), tratamento de erros, formatação pt-BR
 ├── layout/     menu lateral + barra superior (busca global e "Nova descoberta")
 ├── shared/     ícones, cards de indicador, chips de status, gráficos (área e barras), paginação
-└── features/   dashboard, devices, discovery, ports, traffic, activity
+└── features/   dashboard, devices, discovery, ports, traffic, activity, security
 ```
 
 Componentes standalone com signals, sem zone.js e sem bibliotecas de UI. Os gráficos são SVG/HTML

@@ -102,4 +102,18 @@ describe('Api', () => {
     api.deviceEvents('d1', 2).subscribe();
     expect(http.expectOne((r) => r.url === '/api/devices/d1/events').request.params.get('page')).toBe('2');
   });
+
+  it('salva a regra de segurança e filtra os alertas', () => {
+    api.updateSecurityRule('RISKY_SERVICE', { enabled: true, severity: 'HIGH', params: { ports: '22,3389' } }).subscribe();
+    const put = http.expectOne('/api/security/rules/RISKY_SERVICE');
+    expect(put.request.method).toBe('PUT');
+    expect(put.request.body.params.ports).toBe('22,3389');
+
+    api.securityAlerts({ severity: 'CRITICAL', status: '', rule: '', page: 1 }).subscribe();
+    const req = http.expectOne((r) => r.url === '/api/security/alerts');
+    expect(req.request.params.get('severity')).toBe('CRITICAL');
+    expect(req.request.params.has('status')).toBe(false);
+    expect(req.request.params.has('rule')).toBe(false);
+    expect(req.request.params.get('page')).toBe('1');
+  });
 });

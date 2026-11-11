@@ -5,18 +5,19 @@ import { catchError, of, switchMap, timer } from 'rxjs';
 
 import { Api } from '../../core/api';
 import { formatDateTime, formatDuration, formatNumber, timeAgo } from '../../core/format';
-import { DashboardOverview, Device, NetworkEvent } from '../../core/models';
+import { DashboardOverview, Device, NetworkEvent, SecuritySummary } from '../../core/models';
 import { ToastService } from '../../core/toast';
 import { AreaChart, AreaPoint } from '../../shared/area-chart';
 import { BarChart, BarItem } from '../../shared/bar-chart';
 import { RunStatusChip } from '../../shared/chips';
+import { AlertList } from '../../shared/alert-list';
 import { EventList } from '../../shared/event-list';
 import { Icon } from '../../shared/icon';
 import { KpiCard } from '../../shared/kpi-card';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [KpiCard, AreaChart, BarChart, EventList, RunStatusChip, Icon, RouterLink],
+  imports: [KpiCard, AreaChart, AlertList, BarChart, EventList, RunStatusChip, Icon, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
@@ -30,6 +31,7 @@ export class Dashboard {
   protected readonly unknown = signal<Device[] | null>(null);
   protected readonly unknownTotal = signal(0);
   protected readonly recentEvents = signal<NetworkEvent[] | null>(null);
+  protected readonly security = signal<SecuritySummary | null>(null);
   protected readonly loadError = signal(false);
 
   protected readonly timeAgo = timeAgo;
@@ -54,6 +56,14 @@ export class Dashboard {
       )
       .subscribe((page) => {
         if (page) this.recentEvents.set(page.content);
+      });
+    timer(0, 30_000)
+      .pipe(
+        switchMap(() => this.api.securitySummary().pipe(catchError(() => of(null)))),
+        takeUntilDestroyed(),
+      )
+      .subscribe((s) => {
+        if (s) this.security.set(s);
       });
     this.loadUnknown();
   }

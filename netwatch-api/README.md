@@ -28,6 +28,7 @@ com.netwatch.netwatch_api
 ├── ports/        verificação de portas e serviços (Fase 4)
 ├── traffic/      tráfego: sessões, fluxos e estatísticas (Fase 5)
 ├── activity/     histórico de eventos e análise de atividades (Fase 6)
+├── security/     motor de segurança: regras e alertas (Fase 7)
 └── dashboard/    visão geral para a tela inicial
 ```
 
@@ -165,6 +166,31 @@ transação da operação. Eles são a base do motor de segurança e dos alertas
 
 Eventos de dispositivos removidos continuam no histórico (sem o vínculo). Retenção: `netwatch.activity.retention-days` (90).
 
+## API — Motor de segurança
+
+Regras avaliam os eventos (depois que a operação que os gerou é gravada) e o tráfego (a cada minuto) e geram
+**alertas**. Um alerta ainda ativo não é repetido: novas ocorrências somam em `occurrences`.
+
+| Regra | Gravidade padrão | Dispara quando | Parâmetros |
+|---|---|---|---|
+| Dispositivo desconhecido | média | equipamento novo ainda não reconhecido | — |
+| Serviço de risco exposto | alta | porta sensível aberta (verificação de portas ou tráfego) | `ports` |
+| Porta nova em dispositivo conhecido | média | porta passou a aceitar conexões em equipamento reconhecido | — |
+| Conflito de IP / ARP spoofing | alta (**crítica** se for IP crítico) | IP em uso aparece com outro MAC em até 30 min | `criticalIps` (vazio = finais .1 e .254) |
+| Varredura de portas ou de rede | alta | origem tenta ≥ N portas de um destino ou ≥ N equipamentos da rede | `portThreshold`, `hostThreshold`, `windowMinutes` |
+| Conexão em porta suspeita | alta | tráfego para portas de backdoor, IRC, Tor... | `ports` |
+| Acesso administrativo vindo de fora | alta | IP fora das redes autorizadas acessa SSH/RDP/SMB/VNC | `ports` |
+| Atividade fora do horário | média | dispositivo, porta ou serviço novo no período configurado | `start`, `end` (horas) |
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/api/security/rules` | Regras, configuração atual, valores de fábrica e alertas ativos de cada uma |
+| PUT | `/api/security/rules/{code}` | `{"enabled":true,"severity":"HIGH","params":{"ports":"22,3389"}}`; parâmetros omitidos voltam ao padrão |
+| GET | `/api/security/alerts` | Alertas. Filtros: `status`, `severity`, `rule`, `deviceId` |
+| GET | `/api/security/summary` | Alertas ativos por gravidade e por regra, e os mais recentes |
+
+Cada alerta traz a evidência e a recomendação da regra. Reconhecer, resolver e descartar alertas é a Fase 8.
+
 ## API — Dashboard
 
 `GET /api/dashboard/overview` — indicadores de dispositivos, portas abertas, última descoberta,
@@ -180,10 +206,10 @@ A interface Angular fica em [`../netwatch-web`](../netwatch-web).
 - [x] Fase 2 — Cadastro e gerenciamento de dispositivos
 - [x] Fase 3 — Descoberta de dispositivos
 - [x] Fase 4 — Verificação de portas
-- [x] Fase 9 (parcial) — Interface Angular para as fases 1–6 (cada fase nova já entra com sua tela)
+- [x] Fase 9 (parcial) — Interface Angular para as fases 1–7 (cada fase nova já entra com sua tela)
 - [x] Fase 5 — Tráfego: tabela de conexões (sem driver) ou captura de pacotes (Npcap/libpcap)
 - [x] Fase 6 — Análise de atividades / histórico de eventos
-- [ ] Fase 7 — Motor de segurança
+- [x] Fase 7 — Motor de segurança
 - [ ] Fase 8 — Alertas
 - [ ] Fase 10 — Relatórios
 - [ ] Fase 11 — Configurações

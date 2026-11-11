@@ -1,4 +1,15 @@
-import { CaptureStatus, DeviceType, EventCategory, EventSeverity, EventType, PortState, RunStatus } from './models';
+import {
+  AlertSeverity,
+  AlertStatus,
+  CaptureStatus,
+  DeviceType,
+  EventCategory,
+  EventSeverity,
+  EventType,
+  PortState,
+  RuleCategory,
+  RunStatus,
+} from './models';
 
 export const DEVICE_TYPES: { value: DeviceType; label: string }[] = [
   { value: 'UNKNOWN', label: 'Não definido' },
@@ -117,6 +128,7 @@ export const EVENT_CATEGORY_LABEL: Record<EventCategory, string> = {
 export const EVENT_TYPE_LABEL: Record<EventType, string> = {
   DEVICE_DISCOVERED: 'Novo dispositivo',
   DEVICE_IP_CHANGED: 'IP alterado',
+  DEVICE_IP_CONFLICT: 'Conflito de IP',
   DEVICE_RETURNED: 'Voltou a aparecer',
   DEVICE_INACTIVE: 'Ficou inativo',
   DEVICE_CREATED: 'Cadastro manual',
@@ -133,4 +145,25 @@ export const EVENT_TYPE_LABEL: Record<EventType, string> = {
   CAPTURE_FINISHED: 'Captura encerrada',
   CAPTURE_FAILED: 'Falha na captura',
   TRAFFIC_NEW_SERVICE: 'Novo serviço no tráfego',
+};
+
+export const ALERT_SEVERITY_LABEL: Record<AlertSeverity, string> = {
+  LOW: 'Baixa',
+  MEDIUM: 'Média',
+  HIGH: 'Alta',
+  CRITICAL: 'Crítica',
+};
+
+export const ALERT_STATUS_LABEL: Record<AlertStatus, string> = {
+  OPEN: 'Aberto',
+  ACKNOWLEDGED: 'Reconhecido',
+  RESOLVED: 'Resolvido',
+  DISMISSED: 'Descartado',
+};
+
+export const RULE_CATEGORY_LABEL: Record<RuleCategory, string> = {
+  DEVICES: 'Dispositivos e portas',
+  NETWORK: 'Rede',
+  TRAFFIC: 'Comportamento no tráfego',
+  SCHEDULE: 'Horário',
 };

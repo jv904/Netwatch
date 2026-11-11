@@ -1,0 +1,113 @@
+<div class="page-header">
+  <div>
+    <h1>Motor de segurança</h1>
+    <p>Regras que analisam dispositivos, portas, eventos e tráfego e geram alertas sobre comportamentos suspeitos.</p>
+  </div>
+</div>
+
+@if (loadError()) {
+  <div class="banner error-banner">
+    <app-icon name="alert" />
+    <span>Não foi possível carregar o motor de segurança. Verifique se a NetWatch API está em execução.</span>
+  </div>
+}
+
+<section class="grid grid-kpi">
+  <app-kpi-card label="Alertas ativos" icon="bell" [value]="summary()?.activeAlerts ?? null" caption="Abertos ou reconhecidos" />
+  <app-kpi-card label="Críticos" icon="alert" tone="warning" [value]="summary()?.critical ?? null" caption="Exigem ação imediata" />
+  <app-kpi-card
+    label="Altos e médios"
+    icon="shield"
+    tone="info"
+    [value]="summary() ? summary()!.high + summary()!.medium : null"
+    [caption]="summary() ? summary()!.high + ' altos, ' + summary()!.medium + ' médios, ' + summary()!.low + ' baixos' : ''"
+  />
+  <app-kpi-card
+    label="Regras ativas"
+    icon="settings"
+    tone="good"
+    [value]="summary() ? summary()!.rulesEnabled + ' de ' + summary()!.rulesTotal : null"
+    caption="Ligadas no motor"
+  />
+</section>
+
+<div class="grid grid-2 section">
+  <section class="card">
+    <div class="card-header">
+      <h2><app-icon name="bell" [size]="16" /> Detecções recentes</h2>
+    </div>
+    @if (summary(); as s) {
+      <app-alert-list [alerts]="s.recent" emptyText="Nenhum alerta ativo. O motor avalia cada evento novo e o tráfego a cada minuto." />
+    } @else {
+      <div class="skeleton" style="height: 220px"></div>
+    }
+  </section>
+
+  <section class="card">
+    <div class="card-header">
+      <h2><app-icon name="report" [size]="16" /> Alertas ativos por regra</h2>
+      <span class="hint">clique para filtrar</span>
+    </div>
+    @if (summary()) {
+      <app-bar-chart
+        [items]="ruleBars()"
+        unit="alertas"
+        ariaLabel="Alertas ativos por regra"
+        emptyText="Nenhum alerta ativo."
+        [interactive]="true"
+        (itemSelect)="filterByRule($event)"
+      />
+    } @else {
+      <div class="skeleton" style="height: 200px"></div>
+    }
+  </section>
+</div>
+
+<section class="section">
+  <div class="card-header">
+    <h2><app-icon name="settings" [size]="16" /> Regras</h2>
+    <span class="hint">as mudanças valem para as próximas detecções</span>
+  </div>
+  @if (rules(); as list) {
+    @for (g of groups(); track g.category) {
+      <h3 class="group">{{ g.label }}</h3>
+      <div class="rules">
+        @for (r of g.rules; track r.code) {
+          <app-rule-card [rule]="r" (saved)="onSaved($event)" />
+        }
+      </div>
+    }
+  } @else {
+    <div class="skeleton" style="height: 320px"></div>
+  }
+</section>
+
+<section class="card section" id="alertas">
+  <div class="card-header">
+    <h2><app-icon name="clock" [size]="16" /> Alertas gerados</h2>
+    @if (alerts(); as p) {
+      <span class="hint">{{ p.totalElements }} no total</span>
+    }
+  </div>
+  <div class="filters">
+    <select class="select" aria-label="Gravidade" [value]="severityFilter()" (change)="setSeverity($any($event.target).value)">
+      <option value="">Qualquer gravidade</option>
+      @for (s of severities; track s) {
+        <option [value]="s" [selected]="s === severityFilter()">{{ severityLabel[s] }}</option>
+      }
+    </select>
+    <select class="select" aria-label="Regra" [value]="ruleFilter()" (change)="setRule($any($event.target).value)">
+      <option value="">Todas as regras</option>
+      @for (r of rules() ?? []; track r.code) {
+        <option [value]="r.code" [selected]="r.code === ruleFilter()">{{ r.title }}</option>
+      }
+    </select>
+    <span class="muted small">Reconhecer, resolver e descartar alertas chega na próxima fase (gerenciamento de alertas).</span>
+  </div>
+  @if (alerts(); as p) {
+    <app-alert-list [alerts]="p.content" [showStatus]="true" emptyText="Nenhum alerta com esses filtros." />
+    <app-paginator [page]="p.page" [size]="p.size" [total]="p.totalElements" (pageChange)="page.set($event)" />
+  } @else {
+    <div class="skeleton" style="height: 200px"></div>
+  }
+</section>

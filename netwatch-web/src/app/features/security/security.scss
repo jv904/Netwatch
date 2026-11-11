@@ -1,0 +1,31 @@
+.section {
+  margin-top: 16px;
+}
+
+.error-banner {
+  background: var(--critical-soft);
+  border-color: rgba(208, 59, 59, 0.4);
+}
+
+.group {
+  margin: 18px 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.rules {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+  gap: 12px;
+}
+
+.filters .select {
+  flex: 0 0 auto;
+}
+
+.small {
+  font-size: 12px;
+}
