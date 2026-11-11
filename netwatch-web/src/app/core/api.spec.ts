@@ -144,4 +144,23 @@ describe('Api', () => {
     expect(list.request.params.get('state')).toBe('active');
     expect(list.request.params.get('q')).toBe('192.168.0.5');
   });
+
+  it('emite relatórios e monta os endereços de download', () => {
+    api.generateReport({ type: 'SECURITY', period: 'CUSTOM', from: '2026-11-01', to: '2026-11-07' }).subscribe();
+    const post = http.expectOne('/api/reports');
+    expect(post.request.method).toBe('POST');
+    expect(post.request.body).toEqual({ type: 'SECURITY', period: 'CUSTOM', from: '2026-11-01', to: '2026-11-07' });
+
+    api.reports('INVENTORY', 1).subscribe();
+    const list = http.expectOne((r) => r.url === '/api/reports');
+    expect(list.request.params.get('type')).toBe('INVENTORY');
+    expect(list.request.params.get('page')).toBe('1');
+
+    api.reports().subscribe();
+    expect(http.expectOne((r) => r.url === '/api/reports').request.params.has('type')).toBe(false);
+
+    expect(api.reportPdfUrl('r1')).toBe('/api/reports/r1/pdf');
+    expect(api.reportCsvUrl('r1')).toBe('/api/reports/r1/csv');
+    expect(api.reportCsvUrl('r1', 2)).toBe('/api/reports/r1/csv?table=2');
+  });
 });

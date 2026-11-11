@@ -468,6 +468,81 @@ export interface BulkAlertResult {
   skipped: number;
 }
 
+// ---------- Relatórios ----------
+
+export type ReportType = 'OVERVIEW' | 'INVENTORY' | 'EXPOSURE' | 'SECURITY' | 'TRAFFIC';
+export type ReportPreset = 'LAST_24H' | 'LAST_7D' | 'LAST_30D' | 'PREVIOUS_WEEK' | 'PREVIOUS_MONTH' | 'CUSTOM';
+
+export interface ReportTypeInfo {
+  type: ReportType;
+  title: string;
+  description: string;
+}
+
+export interface GenerateReportRequest {
+  type: ReportType;
+  period: ReportPreset;
+  /** Datas locais (yyyy-MM-dd), só para CUSTOM. */
+  from?: string;
+  to?: string;
+}
+
+export interface ReportSummary {
+  id: string;
+  type: ReportType;
+  title: string;
+  periodStart: string;
+  periodEnd: string;
+  periodLabel: string;
+  generatedAt: string;
+  trigger: 'MANUAL' | 'SCHEDULED';
+}
+
+export interface ReportKpi {
+  label: string;
+  value: string;
+  hint: string | null;
+  tone: 'neutral' | 'good' | 'warning' | 'critical';
+}
+
+export interface ReportChart {
+  title: string;
+  kind: 'BAR' | 'LINE';
+  unit: string | null;
+  points: { label: string; value: number }[];
+}
+
+export interface ReportTable {
+  title: string;
+  columns: string[];
+  rows: string[][];
+  totalRows: number;
+}
+
+export interface ReportSection {
+  title: string;
+  summary: string | null;
+  kpis: ReportKpi[];
+  chart: ReportChart | null;
+  tables: ReportTable[];
+}
+
+export interface ReportDocument {
+  title: string;
+  description: string;
+  periodStart: string;
+  periodEnd: string;
+  periodLabel: string;
+  generatedAt: string;
+  timeZone: string;
+  sections: ReportSection[];
+}
+
+export interface ReportView {
+  report: ReportSummary;
+  document: ReportDocument;
+}
+
 export interface SecuritySummary {
   activeAlerts: number;
   critical: number;

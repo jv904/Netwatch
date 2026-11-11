@@ -60,6 +60,11 @@ netwatch:
     default-duration: 1h
     max-duration: 8h
     retention-days: 7
+  reports:
+    # Relatório geral automático (Fase 10): semana anterior às segundas 6h e mês anterior no dia 1º, 6h30.
+    weekly: ${NETWATCH_REPORTS_WEEKLY:true}
+    monthly: ${NETWATCH_REPORTS_MONTHLY:true}
+    retention-days: 365
   activity:
     # Dias que os eventos ficam no histórico de atividades (Fase 6).
     retention-days: 90

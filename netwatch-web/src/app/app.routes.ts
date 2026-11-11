@@ -47,5 +47,15 @@ export const routes: Routes = [
     title: 'Alertas · NetWatch',
     loadComponent: () => import('./features/alerts/alerts').then((m) => m.Alerts),
   },
+  {
+    path: 'reports',
+    title: 'Relatórios · NetWatch',
+    loadComponent: () => import('./features/reports/reports').then((m) => m.Reports),
+  },
+  {
+    path: 'reports/:id',
+    title: 'Relatório · NetWatch',
+    loadComponent: () => import('./features/reports/report-view').then((m) => m.ReportViewPage),
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];

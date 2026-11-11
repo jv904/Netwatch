@@ -15,4 +15,8 @@ public interface DiscoveryRunRepository extends JpaRepository<DiscoveryRun, UUID
     Optional<DiscoveryRun> findFirstByOrderByStartedAtDesc();
 
     List<DiscoveryRun> findTop20ByStatusOrderByStartedAtDesc(DiscoveryRunStatus status);
+
+    /** Execuções iniciadas no período [from, to). */
+    List<DiscoveryRun> findByStartedAtGreaterThanEqualAndStartedAtLessThanOrderByStartedAt(java.time.Instant from,
+            java.time.Instant to);
 }

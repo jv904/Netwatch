@@ -11,4 +11,8 @@ public interface CaptureSessionRepository extends JpaRepository<CaptureSession, 
     List<CaptureSession> findByStatus(CaptureSessionStatus status);
 
     Optional<CaptureSession> findFirstByOrderByStartedAtDesc();
+
+    /** Sessões iniciadas no período [from, to). */
+    List<CaptureSession> findByStartedAtGreaterThanEqualAndStartedAtLessThanOrderByStartedAt(java.time.Instant from,
+            java.time.Instant to);
 }

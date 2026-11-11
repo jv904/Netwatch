@@ -593,3 +593,29 @@ table.table {
     animation: none;
   }
 }
+
+/* ---------- Impressão (relatórios) ---------- */
+
+@media print {
+  :root {
+    --page: #fff;
+    --surface-1: #fff;
+    --surface-2: #f4f6f9;
+    --surface-3: #eef1f5;
+    --border: #d8dee6;
+    --border-strong: #c5ccd6;
+    --text-primary: #111827;
+    --text-secondary: #374151;
+    --text-muted: #6b7280;
+    --grid: #e5e9ef;
+    --axis: #9ca3af;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  .card {
+    box-shadow: none;
+  }
+}

@@ -16,6 +16,9 @@ public interface TrafficMinuteStatRepository extends JpaRepository<TrafficMinute
 
     List<TrafficMinuteStat> findByBucketStartGreaterThanEqualOrderByBucketStart(Instant since);
 
+    List<TrafficMinuteStat> findByBucketStartGreaterThanEqualAndBucketStartLessThanOrderByBucketStart(Instant from,
+            Instant to);
+
     @Modifying
     @Query("delete from TrafficMinuteStat s where s.bucketStart < :cutoff")
     int deleteOlderThan(@Param("cutoff") Instant cutoff);

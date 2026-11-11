@@ -19,6 +19,9 @@ public interface TrafficFlowRepository extends JpaRepository<TrafficFlow, UUID>,
 
     List<TrafficFlow> findByFirstSeenGreaterThanEqual(Instant since);
 
+    /** Fluxos com atividade no período [from, to). */
+    List<TrafficFlow> findByLastSeenGreaterThanEqualAndFirstSeenLessThan(Instant from, Instant to);
+
     boolean existsByDstDeviceIdAndProtocolAndServicePort(UUID dstDeviceId, TrafficProtocol protocol, Integer servicePort);
 
     /** Volume enviado por IP de origem. */

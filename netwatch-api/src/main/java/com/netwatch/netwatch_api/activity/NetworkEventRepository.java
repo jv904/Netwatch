@@ -15,6 +15,9 @@ public interface NetworkEventRepository extends JpaRepository<NetworkEvent, UUID
 
     List<NetworkEvent> findByOccurredAtGreaterThanEqual(Instant since);
 
+    /** Eventos do período [from, to). */
+    List<NetworkEvent> findByOccurredAtGreaterThanEqualAndOccurredAtLessThanOrderByOccurredAt(Instant from, Instant to);
+
     long countByType(EventType type);
 
     @Modifying

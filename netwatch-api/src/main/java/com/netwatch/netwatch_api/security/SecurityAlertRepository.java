@@ -22,6 +22,12 @@ public interface SecurityAlertRepository extends JpaRepository<SecurityAlert, UU
 
     Optional<SecurityAlert> findFirstByOrderByFirstSeenAtDesc();
 
+    /** Alertas abertos no período [from, to). */
+    List<SecurityAlert> findByFirstSeenAtGreaterThanEqualAndFirstSeenAtLessThanOrderByFirstSeenAtDesc(
+            java.time.Instant from, java.time.Instant to);
+
+    List<SecurityAlert> findByStatusIn(Collection<AlertStatus> statuses);
+
     @Query("select a.status as status, count(a) as total from SecurityAlert a group by a.status")
     List<StatusCount> countByStatus();
 

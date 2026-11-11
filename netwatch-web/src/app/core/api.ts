@@ -3,6 +3,11 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 
 import {
+  GenerateReportRequest,
+  ReportSummary,
+  ReportType,
+  ReportTypeInfo,
+  ReportView,
   AlertCounts,
   AlertDetail,
   BulkAlertAction,
@@ -270,5 +275,38 @@ export class Api {
       reason: options.reason ?? null,
       suppress: options.suppress ?? false,
     });
+  }
+
+  // ---------- Relatórios ----------
+
+  reportTypes(): Observable<ReportTypeInfo[]> {
+    return this.http.get<ReportTypeInfo[]>('/api/reports/types');
+  }
+
+  generateReport(request: GenerateReportRequest): Observable<ReportSummary> {
+    return this.http.post<ReportSummary>('/api/reports', request);
+  }
+
+  reports(type: ReportType | '' = '', page = 0, size = 15): Observable<Page<ReportSummary>> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (type) params = params.set('type', type);
+    return this.http.get<Page<ReportSummary>>('/api/reports', { params });
+  }
+
+  report(id: string): Observable<ReportView> {
+    return this.http.get<ReportView>(`/api/reports/${id}`);
+  }
+
+  deleteReport(id: string): Observable<void> {
+    return this.http.delete<void>(`/api/reports/${id}`);
+  }
+
+  /** Endereços de download (o navegador baixa direto; o proxy encaminha para a API). */
+  reportPdfUrl(id: string): string {
+    return `/api/reports/${id}/pdf`;
+  }
+
+  reportCsvUrl(id: string, table?: number): string {
+    return table === undefined ? `/api/reports/${id}/csv` : `/api/reports/${id}/csv?table=${table}`;
   }
 }

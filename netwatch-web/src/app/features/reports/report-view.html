@@ -1,0 +1,110 @@
+@if (notFound()) {
+  <div class="card empty">
+    <strong>Relatório não encontrado</strong>
+    Ele pode ter sido excluído. <a class="link" routerLink="/reports">Voltar aos relatórios</a>
+  </div>
+} @else if (view(); as v) {
+  @let doc = v.document;
+  <div class="page-header">
+    <div>
+      <a class="back no-print" routerLink="/reports"><app-icon name="back" [size]="14" /> Relatórios</a>
+      <p class="brand-line">NetWatch</p>
+      <h1>{{ doc.title }}</h1>
+      <p>
+        Período: <strong>{{ doc.periodLabel }}</strong> · emitido em {{ formatDateTime(doc.generatedAt) }}
+        · {{ v.report.trigger === 'SCHEDULED' ? 'automático' : 'manual' }}
+      </p>
+    </div>
+    <span class="spacer"></span>
+    <div class="row no-print">
+      <a class="btn" [href]="pdfUrl()" download><app-icon name="report" [size]="14" /> PDF</a>
+      <a class="btn" [href]="csvUrl()" download>CSV (Excel)</a>
+      <button class="btn btn-ghost" type="button" (click)="print()">Imprimir</button>
+    </div>
+  </div>
+  <p class="muted description">{{ doc.description }}</p>
+
+  @for (section of doc.sections; track $index; let si = $index) {
+    <section class="card report-section">
+      <div class="card-header">
+        <h2>{{ section.title }}</h2>
+      </div>
+      @if (section.summary) {
+        <p class="summary">{{ section.summary }}</p>
+      }
+      @if (section.kpis.length) {
+        <div class="kpis">
+          @for (k of section.kpis; track k.label) {
+            <div class="kpi" [class]="k.tone">
+              <span class="kpi-label">{{ k.label }}</span>
+              <span class="kpi-value nums">{{ k.value }}</span>
+              @if (k.hint) {
+                <span class="kpi-hint">{{ k.hint }}</span>
+              }
+            </div>
+          }
+        </div>
+      }
+      @if (section.chart; as chart) {
+        @if (chart.points.length) {
+          <div class="chart">
+            <h3>{{ chart.title }}</h3>
+            @if (chart.kind === 'LINE') {
+              @let l = line(chart);
+              <app-area-chart [points]="l.points" [height]="200" [unit]="l.unit" [ariaLabel]="chart.title" />
+            } @else {
+              @let b = bars(chart);
+              <app-bar-chart [items]="b.items" [unit]="b.unit" [ariaLabel]="chart.title" />
+            }
+          </div>
+        }
+      }
+      @for (table of section.tables; track $index; let ti = $index) {
+        @if (table.rows.length) {
+          @let index = tableIndex().get(si + ':' + ti) ?? 0;
+          <div class="table-block">
+            <div class="table-head">
+              <h3>{{ table.title }}</h3>
+              <span class="muted small">{{ table.totalRows }} {{ table.totalRows === 1 ? 'linha' : 'linhas' }}</span>
+              <span class="spacer"></span>
+              <a class="btn btn-ghost btn-sm no-print" [href]="csvUrl(index)" download>CSV desta tabela</a>
+            </div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    @for (c of table.columns; track $index) {
+                      <th>{{ c }}</th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of table.rows; track $index; let ri = $index) {
+                    @if (ri < visibleRows || expanded().has(index)) {
+                      <tr>
+                        @for (cell of row; track $index) {
+                          <td>{{ cell }}</td>
+                        }
+                      </tr>
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+            @if (table.rows.length > visibleRows) {
+              <button class="btn btn-ghost btn-sm no-print more" type="button" (click)="toggle(index)">
+                {{ expanded().has(index) ? 'Mostrar menos' : 'Mostrar todas as ' + table.rows.length + ' linhas' }}
+              </button>
+            }
+            @if (table.totalRows > table.rows.length) {
+              <p class="muted small">O relatório inclui as primeiras {{ table.rows.length }} de {{ table.totalRows }} linhas.</p>
+            }
+          </div>
+        }
+      }
+    </section>
+  }
+} @else {
+  <div class="skeleton" style="height: 56px; width: 360px; margin-bottom: 16px"></div>
+  <div class="skeleton" style="height: 320px"></div>
+}

@@ -217,6 +217,30 @@ e abrir, resolver e descartar também aparecem no histórico de atividades (cate
 
 Uma ação que a situação atual não permite (ex.: resolver um alerta já resolvido) responde **409**.
 
+## API — Relatórios
+
+Cinco tipos: **geral da rede** (`OVERVIEW`), **inventário** (`INVENTORY`), **exposição de portas** (`EXPOSURE`),
+**segurança e alertas** (`SECURITY`) e **tráfego** (`TRAFFIC`). Cada relatório emitido guarda o conteúdo do momento
+(seções com indicadores, gráfico e tabelas, em JSON), então o histórico não muda quando os dados mudam. A tela, o
+PDF (OpenPDF) e o CSV são gerados a partir desse mesmo conteúdo.
+
+Períodos: `LAST_24H`, `LAST_7D`, `LAST_30D`, `PREVIOUS_WEEK` (segunda a domingo), `PREVIOUS_MONTH` e `CUSTOM`
+(`from`/`to`, datas locais, até 1 ano). O relatório geral é emitido **automaticamente** toda segunda às 6h (semana
+anterior) e todo dia 1º às 6h30 (mês anterior), sem duplicar se a API reiniciar.
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/api/reports/types` | Tipos com título e descrição |
+| POST | `/api/reports` | `{"type":"SECURITY","period":"PREVIOUS_WEEK"}` ou `{"type":"OVERVIEW","period":"CUSTOM","from":"2026-11-01","to":"2026-11-07"}` → 201 |
+| GET | `/api/reports` | Histórico. Filtro: `type` |
+| GET | `/api/reports/{id}` | Relatório e conteúdo |
+| GET | `/api/reports/{id}/pdf` | PDF (A4; paisagem quando há tabelas largas) |
+| GET | `/api/reports/{id}/csv` | CSV para o Excel (`;`, UTF-8 com BOM); `?table=N` exporta só a tabela N |
+| DELETE | `/api/reports/{id}` | Exclui → 204 |
+
+Configurações em `netwatch.reports.*`: `weekly` (`NETWATCH_REPORTS_WEEKLY`), `monthly` (`NETWATCH_REPORTS_MONTHLY`)
+e `retention-days` (365).
+
 ## API — Dashboard
 
 `GET /api/dashboard/overview` — indicadores de dispositivos, portas abertas, última descoberta,
@@ -232,11 +256,11 @@ A interface Angular fica em [`../netwatch-web`](../netwatch-web).
 - [x] Fase 2 — Cadastro e gerenciamento de dispositivos
 - [x] Fase 3 — Descoberta de dispositivos
 - [x] Fase 4 — Verificação de portas
-- [x] Fase 9 (parcial) — Interface Angular para as fases 1–8 (cada fase nova já entra com sua tela)
+- [x] Fase 9 (parcial) — Interface Angular para as fases 1–10 (cada fase nova já entra com sua tela)
 - [x] Fase 5 — Tráfego: tabela de conexões (sem driver) ou captura de pacotes (Npcap/libpcap)
 - [x] Fase 6 — Análise de atividades / histórico de eventos
 - [x] Fase 7 — Motor de segurança
 - [x] Fase 8 — Alertas
-- [ ] Fase 10 — Relatórios
+- [x] Fase 10 — Relatórios (tela, PDF, CSV e emissão automática)
 - [ ] Fase 11 — Configurações
 - [ ] Fase 12 — Testes e documentação

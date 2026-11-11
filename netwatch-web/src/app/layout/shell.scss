@@ -4,6 +4,24 @@
   min-height: 100vh;
 }
 
+/* Na impressão (relatórios) sai só o conteúdo da página. */
+@media print {
+  .app {
+    display: block;
+  }
+
+  .sidebar,
+  .topbar,
+  .scrim,
+  .toasts {
+    display: none !important;
+  }
+
+  .content {
+    padding: 0 !important;
+  }
+}
+
 .sidebar {
   position: sticky;
   top: 0;

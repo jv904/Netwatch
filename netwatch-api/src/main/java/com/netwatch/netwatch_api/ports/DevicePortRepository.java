@@ -17,6 +17,8 @@ public interface DevicePortRepository extends JpaRepository<DevicePort, DevicePo
 
     long countByState(PortState state);
 
+    List<DevicePort> findByStateOrderByDeviceIdAscPortAsc(PortState state);
+
     /** Serviços mais expostos: portas abertas agrupadas, da mais frequente para a menos. */
     @Query("""
             select dp.port as port, max(dp.service) as service, count(dp) as devices

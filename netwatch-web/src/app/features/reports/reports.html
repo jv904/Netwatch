@@ -1,0 +1,119 @@
+<div class="page-header">
+  <div>
+    <h1>Relatórios</h1>
+    <p>Relatórios de período com os dados reais da rede, para consultar na tela, guardar em PDF ou abrir no Excel (CSV).</p>
+  </div>
+</div>
+
+<section class="card">
+  <div class="card-header">
+    <h2><app-icon name="report" [size]="16" /> Emitir relatório</h2>
+  </div>
+
+  <div class="types" role="radiogroup" aria-label="Tipo de relatório">
+    @for (t of types(); track t.type) {
+      <label class="type" [class.selected]="type() === t.type">
+        <input type="radio" name="report-type" [value]="t.type" [checked]="type() === t.type" (change)="type.set(t.type)" />
+        <span>
+          <strong>{{ t.title }}</strong>
+          <small>{{ t.description }}</small>
+        </span>
+      </label>
+    } @empty {
+      <div class="skeleton" style="height: 90px"></div>
+    }
+  </div>
+
+  <div class="row period">
+    <label class="field">
+      <span>Período</span>
+      <select class="select" [value]="preset()" (change)="preset.set($any($event.target).value)">
+        @for (p of presets; track p.value) {
+          <option [value]="p.value" [selected]="p.value === preset()">{{ p.label }}</option>
+        }
+      </select>
+    </label>
+    @if (preset() === 'CUSTOM') {
+      <label class="field">
+        <span>De</span>
+        <input class="input" type="date" [value]="from()" (input)="from.set($any($event.target).value)" />
+      </label>
+      <label class="field">
+        <span>Até</span>
+        <input class="input" type="date" [value]="to()" (input)="to.set($any($event.target).value)" />
+      </label>
+    }
+    <span class="spacer"></span>
+    <button class="btn btn-primary" type="button" (click)="generate()" [disabled]="generating() || customInvalid()">
+      @if (generating()) {
+        <span class="spinner"></span> Gerando…
+      } @else {
+        <app-icon name="report" [size]="14" /> Gerar relatório
+      }
+    </button>
+  </div>
+  @if (customInvalid()) {
+    <p class="error small">A data final deve ser igual ou posterior à inicial.</p>
+  }
+  <p class="muted small">
+    O relatório geral também é emitido automaticamente: toda segunda-feira (semana anterior) e todo dia 1º (mês anterior).
+    Cada relatório guarda os dados do momento em que foi emitido.
+  </p>
+</section>
+
+<section class="card card-flush section">
+  <div class="card-header">
+    <h2><app-icon name="clock" [size]="16" /> Relatórios emitidos</h2>
+    <span class="spacer"></span>
+    <select class="select" aria-label="Filtrar por tipo" [value]="filter()" (change)="setFilter($any($event.target).value)">
+      <option value="">Todos os tipos</option>
+      @for (t of types(); track t.type) {
+        <option [value]="t.type" [selected]="t.type === filter()">{{ t.title }}</option>
+      }
+    </select>
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Relatório</th>
+          <th>Período</th>
+          <th>Emitido</th>
+          <th>Origem</th>
+          <th class="num">Arquivos</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (history(); as h) {
+          @for (r of h.content; track r.id) {
+            <tr>
+              <td><a class="link cell-main" [routerLink]="['/reports', r.id]">{{ r.title }}</a></td>
+              <td>{{ r.periodLabel }}</td>
+              <td>
+                <div>{{ formatDateTime(r.generatedAt) }}</div>
+                <div class="cell-sub">{{ timeAgo(r.generatedAt) }}</div>
+              </td>
+              <td>
+                <span class="chip" [class.info]="r.trigger === 'SCHEDULED'">{{ r.trigger === 'SCHEDULED' ? 'Automático' : 'Manual' }}</span>
+              </td>
+              <td class="num actions">
+                <a class="btn btn-sm" [href]="pdfUrl(r.id)" download>PDF</a>
+                <a class="btn btn-sm" [href]="csvUrl(r.id)" download>CSV</a>
+                <button class="btn btn-ghost btn-sm" type="button" (click)="remove(r)" [attr.aria-label]="'Excluir ' + r.title">
+                  <app-icon name="trash" [size]="14" />
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr><td colspan="5"><div class="empty"><strong>Nenhum relatório emitido ainda</strong>Escolha o tipo e o período acima e clique em "Gerar relatório".</div></td></tr>
+          }
+        } @else {
+          <tr><td colspan="5"><div class="skeleton" style="height: 120px"></div></td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  @if (history(); as h) {
+    <app-paginator [page]="h.page" [size]="h.size" [total]="h.totalElements" (pageChange)="page.set($event)" />
+  }
+</section>
