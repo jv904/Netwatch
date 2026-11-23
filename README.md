@@ -7,6 +7,8 @@ com relatórios para acompanhar tudo ao longo do tempo.
 > O NetWatch é uma ferramenta de **observação**, não um antivírus nem um firewall.
 > Use-o apenas em redes que você tem autorização para analisar.
 
+![Dashboard do NetWatch](docs/screenshots/dashboard.png)
+
 ## Estrutura
 
 | Pasta | Conteúdo |
@@ -60,6 +62,19 @@ O banco do Docker completo (volume `netwatch-db`) é separado do banco de desenv
 
 Detalhes de cada parte (rotas da API, configurações e telas) estão nos READMEs de
 [`netwatch-api`](netwatch-api/README.md) e [`netwatch-web`](netwatch-web/README.md).
+
+## Telas
+
+| | |
+|---|---|
+| ![Dispositivos](docs/screenshots/dispositivos.png) | ![Atividades](docs/screenshots/atividades.png) |
+| **Dispositivos** — inventário com IP, MAC, fabricante e situação | **Atividades** — histórico de eventos, tipos, horários e dispositivos mais ativos |
+| ![Segurança](docs/screenshots/seguranca.png) | ![Alertas](docs/screenshots/alertas.png) |
+| **Segurança** — detecções recentes e regras configuráveis | **Alertas** — reconhecer, resolver, descartar e ações em lote |
+| ![Relatórios](docs/screenshots/relatorios.png) | |
+| **Relatórios** — emissão por período, PDF, CSV e histórico | |
+
+> Endereços IP, MAC e nomes de equipamentos nas capturas foram substituídos por valores fictícios.
 
 ## Funcionalidades
 
